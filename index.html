@@ -2,19 +2,18 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#070714">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%2309091b%22/%3E%3Cpath d=%22M16 14v36h8V28l8 12 8-12v22h8V14h-9L32 27 25 14z%22 fill=%22%2378eaff%22/%3E%3C/svg%3E" type="image/svg+xml">
-  <meta name="description" content="LOOP: Последний цикл — неоновая 2D-головоломка о свете и тенях.">
+  <meta name="description" content="LOOP: Последний цикл — неоновая 2D-головоломка о свете, тенях и памяти.">
   <meta property="og:title" content="LOOP: Последний цикл">
-  <meta property="og:description" content="Неоновая 2D-головоломка о свете, тенях и памяти. Проведи Арзона и Пуши через шесть испытаний Цикла.">
+  <meta property="og:description" content="Помоги Арзону и Пуши пройти двадцать испытаний Цикла.">
   <meta property="og:type" content="website">
+  <meta property="og:image" content="./assets/og/loop-cover.png">
   <title>LOOP: Последний цикл</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%2309091b%22/%3E%3Cpath d=%22M16 14v36h8V28l8 12 8-12v22h8V14h-9L32 27 25 14z%22 fill=%22%2378eaff%22/%3E%3C/svg%3E" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <script src="/sdk.js"></script>
+  <script defer src="./vendor/phaser.min.js"></script>
 </head>
 <body>
   <main id="game-shell">
@@ -29,9 +28,16 @@
     </div>
   </main>
   <script>
-    document.addEventListener("contextmenu", event => event.preventDefault());
-    document.addEventListener("selectstart", event => event.preventDefault());
-    document.addEventListener("dragstart", event => event.preventDefault());
+    (() => {
+      const stop = event => event.preventDefault();
+      document.addEventListener("contextmenu", stop, { passive: false });
+      document.addEventListener("selectstart", stop, { passive: false });
+      document.addEventListener("dragstart", stop, { passive: false });
+      document.addEventListener("gesturestart", stop, { passive: false });
+      document.addEventListener("touchmove", event => {
+        if (event.touches.length > 1) stop(event);
+      }, { passive: false });
+    })();
   </script>
   <script type="module" src="./src/main.js"></script>
 </body>
