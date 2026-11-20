@@ -18,6 +18,11 @@ export class GameScene extends Phaser.Scene {
     this.level = null;
     this.levelIndex = 0;
     this.soundFX = null;
+    this.sdk = null;
+    this.progressData = {};
+    this.newCyclePlus = false;
+    this.runTimeMs = 0;
+    this.finaleStarted = false;
     this.player = null;
     this.playerVisual = null;
     this.pushi = null;
@@ -47,6 +52,9 @@ export class GameScene extends Phaser.Scene {
     if (index < 0 || index >= LEVELS.length) index = this.readSavedLevelIndex();
     this.levelIndex = Phaser.Math.Clamp(index, 0, LEVELS.length - 1);
     this.level = LEVELS[this.levelIndex];
+    this.newCyclePlus = Boolean(data.newCyclePlus);
+    this.runTimeMs = Math.max(0, Number(data.runTimeMs) || 0);
+    this.finaleStarted = false;
     this.dead = false;
     this.completed = false;
     this.transitioning = false;
@@ -65,6 +73,11 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.soundFX = this.registry.get("soundFX") ?? null;
+    this.sdk = this.registry.get("YandexSDK") ?? null;
+    this.progressData = this.sdk?.progress ?? {};
+    this.newCyclePlus = this.newCyclePlus || Boolean(this.progressData.newCyclePlus);
+    this.recordAttempt();
+    this.sdk?.gameplayStart?.();
     const world = this.level.world;
     this.cameras.main.setBackgroundColor(world.background ?? 0x09091b);
     this.physics.world.setBounds(0, 0, world.width, world.height);
@@ -78,6 +91,7 @@ export class GameScene extends Phaser.Scene {
     this.createCompanion();
     this.createPortal();
     this.createHud();
+    this.createFinalActHud();
     this.createTouchControls();
     this.createKeyboardControls();
     this.createCollisions();
@@ -124,6 +138,7 @@ export class GameScene extends Phaser.Scene {
   createBackdrop() {
     const { width, height, background } = this.level.world;
     const graphics = this.add.graphics().setDepth(-20);
+    this.backdropGraphics = graphics;
     graphics.fillGradientStyle(background ?? 0x09091b, 0x101333, 0x171044, 0x080817, 1);
     graphics.fillRect(0, 0, width, height);
     graphics.lineStyle(1, 0x7584df, 0.08);
@@ -312,6 +327,7 @@ export class GameScene extends Phaser.Scene {
     this.pushiBaseScaleX = this.pushi.scaleX;
     this.pushiBaseScaleY = this.pushi.scaleY;
     this.pushiTarget = new Phaser.Math.Vector2(start.x - 55, start.y);
+    this.pushiResonanceBeam = this.add.graphics().setDepth(14);
     this.pushiDanger = false;
   }
 
@@ -483,19 +499,48 @@ export class GameScene extends Phaser.Scene {
       const color = data.color ?? 0x9d83ff;
       const visual = this.add.circle(data.x + data.width / 2, data.y + data.height / 2, Math.min(data.width, data.height) * 0.48, color, 0.18).setStrokeStyle(2, color, 0.85).setDepth(9);
       const ring = this.add.circle(visual.x, visual.y, Math.min(data.width, data.height) * 0.68, color, 0).setStrokeStyle(1, 0xc9baff, 0.45).setDepth(9);
-      this.sensorObjects.push({ data, visual, ring, elapsed: 0, activated: false });
+      this.sensorObjects.push({ data, visual, ring, elapsed: 0, activated: false, challengeComplete: false });
     }
   }
 
   updateSensors(delta) {
     for (const sensor of this.sensorObjects ?? []) {
-      if (sensor.activated) continue;
+      if (sensor.activated && !sensor.data.holdToMaintain) continue;
       const sensorRect = { x: sensor.data.x, y: sensor.data.y, width: sensor.data.width, height: sensor.data.height };
       const covered = this.bridges.some(item => ShadowProjection.intersectsRect(item.shadow?.polygon ?? [], sensorRect));
       sensor.elapsed = covered ? sensor.elapsed + delta : 0;
       const progress = Phaser.Math.Clamp(sensor.elapsed / sensor.data.requiredHold, 0, 1);
       sensor.visual.setFillStyle(sensor.data.color ?? 0x9d83ff, 0.18 + progress * 0.55);
       sensor.ring.setScale(1 + progress * 0.3);
+
+      if (sensor.data.holdToMaintain) {
+        const wasActive = sensor.activated;
+        sensor.activated = covered && progress >= 1;
+        if (sensor.data.requiresJump && sensor.activated && this.player?.body?.velocity.y < -80 &&
+            this.player.x >= sensor.data.jumpXMin && this.player.x <= sensor.data.jumpXMax) {
+          sensor.challengeComplete = true;
+        }
+        const target = this.obstacles.find(item => item.data.id === sensor.data.targetObstacleId);
+        const open = sensor.challengeComplete || sensor.activated;
+        if (target) {
+          target.open = open;
+          target.art.setAlpha(open ? 0.12 : 1);
+          target.core.setAlpha(open ? 0.05 : 0.12);
+          target.halo.setAlpha(open ? 0.02 : 0.07);
+          if (target.physicsBody) target.physicsBody.enable = !open;
+        }
+        if (sensor.challengeComplete) {
+          sensor.visual.setFillStyle(0xffe4a3, 0.9);
+          sensor.ring.setStrokeStyle(2, 0xffe4a3, 1);
+        } else if (sensor.activated) {
+          sensor.visual.setFillStyle(0xffd28a, 0.8);
+          sensor.ring.setStrokeStyle(2, 0xffd28a, 0.95);
+        } else if (wasActive) {
+          sensor.ring.setStrokeStyle(1, 0xc9baff, 0.45);
+        }
+        continue;
+      }
+
       if (progress >= 1) {
         sensor.activated = true;
         sensor.visual.setFillStyle(0x76ffd7, 0.85);
@@ -509,8 +554,44 @@ export class GameScene extends Phaser.Scene {
           if (target.physicsBody) target.physicsBody.enable = false;
         }
         this.soundFX?.playCrystal?.();
+        if (this.level.id === 20 && sensor.data.phase === 1) this.enterFinalPhase(2);
       }
     }
+  }
+
+  createFinalActHud() {
+    if (this.level.id !== 20) return;
+    this.finalActText = this.add.text(this.scale.width / 2, 72, this.level.texts.phase1, {
+      fontFamily: "Nunito, sans-serif", fontSize: "12px", fontStyle: "900",
+      color: "#b9d9ff", stroke: "#11132d", strokeThickness: 3
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(55);
+  }
+
+  enterFinalPhase(phase) {
+    if (this.level.id !== 20 || phase <= (this.finalPhase ?? 1)) return;
+    this.finalPhase = phase;
+    const labels = [null, this.level.texts.phase1, this.level.texts.phase2, this.level.texts.phase3];
+    this.finalActText?.setText(labels[phase] ?? "");
+    this.finalActText?.setColor(phase === 1 ? "#b9d9ff" : phase === 2 ? "#d9b9ff" : "#ffe1a3");
+    if (phase === 2) {
+      this.tweens.add({ targets: this.backdropGraphics, alpha: 0.94, duration: 1500, ease: "Sine.easeInOut" });
+      this.cameras.main.flash(650, 120, 75, 180);
+      this.soundFX?.playBridgeLock?.();
+    } else if (phase === 3) {
+      this.soundFX?.playCrystal?.();
+      this.pushiAura?.setFillStyle(0xffd28a, 0.3);
+    }
+  }
+
+  updateFinalAct() {
+    if (this.level.id !== 20) return;
+    const memory = this.sensorObjects?.find(item => item.data.id === this.level.finalSequence.memorySensorId);
+    const heart = this.sensorObjects?.find(item => item.data.id === this.level.finalSequence.heartSensorId);
+    if (!memory?.activated) return;
+    const bothBridgesBuilt = this.bridges.length === 2 && this.bridges.every(item => item.active);
+    const bothBridgesCrossed = this.bridges.every(item => this.crossedBridges.has(item.id));
+    if (bothBridgesBuilt && bothBridgesCrossed && !heart?.challengeComplete) this.enterFinalPhase(3);
+    if (heart?.challengeComplete) this.enterFinalPhase(3);
   }
 
   ejectPlayerFromBridge(item) {
@@ -689,6 +770,7 @@ export class GameScene extends Phaser.Scene {
     this.updateSensors(safeDelta);
     this.updatePlayerMovement(time);
     this.updateBridgeProgress();
+    this.updateFinalAct();
     this.updateCharacterVisuals(time);
     this.updateLightAtmosphere(time);
     this.updateLandingDust(safeDelta);
@@ -785,6 +867,14 @@ export class GameScene extends Phaser.Scene {
     this.pushi.angle = Math.sin(time / 330) * 2.2;
     this.pushiAura.setPosition(this.pushi.x, this.pushi.y + 4);
     this.pushiShadow.setPosition(this.pushi.x, this.worldGroundY + 39);
+    this.pushiResonanceBeam?.clear();
+    const heartSensor = this.sensorObjects?.find(item => item.data.id === "heart-sensor");
+    if (this.level.id === 20 && heartSensor?.activated && !heartSensor.challengeComplete) {
+      this.pushiAura.setScale(1.8 + Math.sin(time / 95) * 0.12);
+      this.pushiAura.setFillStyle(0xffd28a, 0.24);
+      this.pushiResonanceBeam?.lineStyle(3, 0xffd28a, 0.48 + Math.sin(time / 110) * 0.16);
+      this.pushiResonanceBeam?.lineBetween(this.pushi.x, this.pushi.y, this.player.x, this.player.y - 8);
+    }
     this.pushiShadow.setScale(grounded ? 1 : 0.72, 1);
     const nearEdge = this.gaps.some(gap =>
       this.player.x > gap.x - 82 && this.player.x < gap.x + gap.width + 82
@@ -800,9 +890,11 @@ export class GameScene extends Phaser.Scene {
     if (!this.lamp || !this.lightDustGraphics) return;
     this.lampGlow.setPosition(this.lamp.x, this.lamp.y);
     this.lampCoreGlow.setPosition(this.lamp.x, this.lamp.y);
-    const pulse = 1 + Math.sin(time / 210) * 0.08;
+    const unstable = this.level.id === 20 ? 0.78 + Math.abs(Math.sin(time / 145)) * 0.32 : 1;
+    const pulse = (1 + Math.sin(time / 210) * 0.08) * unstable;
     this.lampCoreGlow.setScale(pulse);
-    this.lampCoreGlow.setAlpha(0.1 + (pulse - 0.92) * 0.22);
+    this.lampCoreGlow.setAlpha((0.1 + (pulse - 0.92) * 0.22) * unstable);
+    this.lamp.setAlpha(this.level.id === 20 ? 0.76 + Math.abs(Math.sin(time / 190)) * 0.24 : 1);
     this.lightDustGraphics.clear();
     const coneTopX = this.lamp.x + 520;
     const coneBottomY = this.worldGroundY + 4;
@@ -884,7 +976,9 @@ export class GameScene extends Phaser.Scene {
     if (Phaser.Geom.Intersects.RectangleToRectangle(bounds, this.portalBounds)) {
       const allBridgesCrossed = this.bridges.length > 0 && this.bridges.every(item => this.crossedBridges.has(item.id));
       const gatesOpen = this.obstacles.filter(item => item.data.type === "barrier" && item.data.sensorId).every(item => item.open);
-      if (allBridgesCrossed && gatesOpen) this.completeLevel();
+      const heart = this.sensorObjects?.find(item => item.data.id === "heart-sensor");
+      const finalLeapComplete = this.level.id !== 20 || Boolean(heart?.challengeComplete);
+      if (allBridgesCrossed && gatesOpen && finalLeapComplete) this.completeLevel();
     }
   }
 
@@ -893,23 +987,140 @@ export class GameScene extends Phaser.Scene {
     this.completed = true;
     this.player.setVelocity(0, 0);
     this.player.body.enable = false;
+    if (this.level.id === 20) {
+      this.finaleCutscene();
+      return;
+    }
     this.soundFX?.playTeleport?.();
     this.saveProgress();
     this.cameras.main.flash(280, 100, 220, 255);
     this.showCompletionPanel();
   }
 
+  finaleCutscene() {
+    if (this.finaleStarted) return;
+    this.finaleStarted = true;
+    this.transitioning = true;
+    this.physics.world.timeScale = 0.35;
+    this.soundFX?.stopLampFeedback?.();
+    this.soundFX?.playFinale?.();
+    this.player.body.enable = false;
+    this.player.setVelocity(0, 0);
+    this.cameras.main.stopFollow();
+    this.cameras.main.zoomTo(1.35, 1800);
+    this.cameras.main.pan((this.player.x + this.pushi.x) / 2, (this.player.y + this.pushi.y) / 2, 1800, "Sine.easeInOut");
+    this.pushi.setDepth(22);
+    this.tweens.add({
+      targets: [this.pushi, this.pushiAura], x: this.player.x - 8, y: this.player.y - 7,
+      duration: 1450, ease: "Cubic.easeInOut"
+    });
+    for (const crystal of this.obstacles.filter(item => item.data.type === "crystal")) {
+      const burst = this.add.particles(crystal.art.x, crystal.art.y, "arzon", {
+        speed: { min: 65, max: 280 }, angle: { min: 0, max: 360 },
+        scale: { start: 0.22, end: 0 }, alpha: { start: 0.95, end: 0 },
+        lifespan: 1450, quantity: 0, blendMode: "ADD"
+      }).setDepth(80);
+      burst.explode(28, crystal.art.x, crystal.art.y);
+      this.time.delayedCall(1700, () => burst.destroy());
+    }
+    const dawn = this.add.graphics().setScrollFactor(0).setDepth(85);
+    dawn.fillGradientStyle(0x251d62, 0x6b4b9b, 0xffc98b, 0xffe8b5, 0.72);
+    dawn.fillRect(0, 0, this.scale.width, this.scale.height);
+    dawn.setAlpha(0);
+    this.tweens.add({ targets: dawn, alpha: 0.76, duration: 2600, ease: "Sine.easeInOut" });
+    this.tweens.add({
+      targets: [this.playerVisual, this.pushi, this.arzonAura, this.pushiAura],
+      alpha: 0.12, scale: 1.5, duration: 650, delay: 1450, ease: "Cubic.easeOut"
+    });
+    this.time.delayedCall(4000, () => {
+      this.physics.world.timeScale = 1;
+      this.showEpilogueScreen();
+    });
+  }
+
+  showEpilogueScreen() {
+    this.saveProgress();
+    const progress = this.sdk?.progress ?? this.progressData ?? {};
+    const stars = Object.values(progress.stars ?? {}).reduce((sum, value) => sum + Math.max(0, Math.min(3, Number(value) || 0)), 0);
+    const totalTime = Object.values(progress.bestTimes ?? {}).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+    const attempts = Object.values(progress.attemptsByLevel ?? {}).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+    const panel = this.add.container(this.scale.width / 2, this.scale.height / 2).setScrollFactor(0).setDepth(120);
+    const width = Math.min(620, this.scale.width - 28);
+    const height = Math.min(440, this.scale.height - 24);
+    panel.add(this.add.rectangle(0, 0, width, height, 0x100e2c, 0.97).setStrokeStyle(2, 0xffd28a, 0.95));
+    panel.add(this.add.text(0, -height / 2 + 42, "ЦИКЛ РАЗОРВАН", {
+      fontFamily: "Nunito, sans-serif", fontSize: this.scale.width < 520 ? "23px" : "31px",
+      fontStyle: "900", color: "#ffe2a6", shadow: { color: "#ffb86b", blur: 18, fill: true }
+    }).setOrigin(0.5));
+    const story = "Арзон был первой искрой, потерявшей своё имя в бесконечном повторении.\nПуши хранил его свет — даже когда весь мир забывал рассвет.\nТеперь их свет стал новым утром. И этот путь больше не повторится.";
+    panel.add(this.add.text(0, -height / 2 + 116, story, {
+      fontFamily: "Nunito, sans-serif", fontSize: this.scale.width < 520 ? "10px" : "13px",
+      fontStyle: "700", color: "#d5d4f2", align: "center", lineSpacing: 8,
+      wordWrap: { width: width - 44 }
+    }).setOrigin(0.5));
+    const timeLabel = Math.floor(totalTime / 60) + " МИН " + Math.floor(totalTime % 60) + " СЕК";
+    panel.add(this.add.text(0, 12, "ЗВЁЗДЫ  " + stars + " / 60     •     ВРЕМЯ  " + timeLabel +
+      "\nПОПЫТКИ  " + attempts, {
+      fontFamily: "Nunito, sans-serif", fontSize: "12px", fontStyle: "900",
+      color: "#aeeeff", align: "center", lineSpacing: 9
+    }).setOrigin(0.5));
+    this.createPanelButton(panel, 0, height / 2 - 76, Math.min(260, width - 54), 44, "НОВЫЙ ЦИКЛ +", () => this.startNewCyclePlus());
+    this.createPanelButton(panel, 0, height / 2 - 25, 170, 30, "В ГЛАВНОЕ МЕНЮ", () => this.returnToMenu(), true);
+    const score = Number(progress.currentRunTime ?? totalTime);
+    this.sdk?.submitLeaderboardScore?.(score);
+    this.sdk?.gameplayStop?.();
+  }
+
+  startNewCyclePlus() {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    const progress = this.sdk?.progress ?? {};
+    this.sdk?.saveProgress?.({
+      newCyclePlus: true,
+      cycleRuns: (Number(progress.cycleRuns) || 0) + 1,
+      currentRunTime: 0
+    });
+    this.scene.start("GameScene", { levelIndex: 0, newCyclePlus: true, runTimeMs: 0 });
+  }
+
+  recordAttempt() {
+    const attemptsByLevel = { ...(this.sdk?.progress?.attemptsByLevel ?? {}) };
+    attemptsByLevel[this.level.id] = (Number(attemptsByLevel[this.level.id]) || 0) + 1;
+    this.sdk?.saveProgress?.({ attemptsByLevel });
+  }
+
   saveProgress() {
     let previous = {};
     try { previous = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}"); } catch {}
-    const nextUnlocked = Math.min(LEVELS.length, Math.max(Number(previous.level) || 1, this.level.id + 1));
-    const bestTimes = { ...(previous.bestTimes || {}) };
+    const cloud = this.sdk?.progress ?? {};
+    const bestTimes = { ...(cloud.bestTimes ?? {}), ...(previous.bestTimes ?? {}) };
     const seconds = Number((this.levelElapsed / 1000).toFixed(2));
     if (!bestTimes[this.level.id] || seconds < bestTimes[this.level.id]) bestTimes[this.level.id] = seconds;
-    const completedLevelsList = [...new Set([...(previous.completedLevelsList || []), this.level.id])];
-    const record = { level: nextUnlocked, lastCompletedLevel: this.level.id, completedLevels: Math.max(Number(previous.completedLevels) || 0, this.level.id), completedLevelsList, bestTimes, updatedAt: Date.now() };
+    const par = Math.max(1, Number(this.level.parTimeSec) || 60);
+    const earnedStars = seconds <= par ? 3 : seconds <= par * 1.5 ? 2 : 1;
+    const stars = { ...(cloud.stars ?? {}), ...(previous.stars ?? {}) };
+    stars[this.level.id] = Math.max(Number(stars[this.level.id]) || 0, earnedStars);
+    const completedLevels = [...new Set([...(cloud.completedLevels ?? []), ...(previous.completedLevelsList ?? []), this.level.id])];
+    const completedLevelsList = [...new Set([...(previous.completedLevelsList ?? []), this.level.id])];
+    const attemptsByLevel = { ...(cloud.attemptsByLevel ?? {}) };
+    const totalTimeByLevel = { ...(cloud.totalTimeByLevel ?? {}) };
+    totalTimeByLevel[this.level.id] = Math.max(Number(totalTimeByLevel[this.level.id]) || 0, seconds);
+    const totalTime = Object.values(bestTimes).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+    const currentRunTime = (Number(cloud.currentRunTime) || 0) + seconds;
+    const record = {
+      level: Math.min(LEVELS.length, Math.max(Number(previous.level) || 1, this.level.id + 1)),
+      unlockedLevel: Math.min(LEVELS.length, Math.max(Number(cloud.unlockedLevel) || 1, this.level.id + 1)),
+      lastCompletedLevel: this.level.id,
+      completedLevels: completedLevels.length,
+      completedLevelsList, completedLevels, bestTimes, stars, attemptsByLevel, totalTimeByLevel,
+      totalTime, currentRunTime, updatedAt: Date.now()
+    };
+    this.progressData = record;
     try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(record)); }
     catch (error) { console.warn("[LOOP] Не удалось сохранить прогресс:", error); }
+    this.sdk?.saveProgress?.(record);
+    this.runTimeMs += this.levelElapsed;
+    return record;
   }
 
   showCompletionPanel() {
@@ -996,7 +1207,9 @@ export class GameScene extends Phaser.Scene {
     if (this.transitioning) return;
     this.transitioning = true;
     this.cameras.main.fadeOut(380, 7, 7, 20);
-    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("GameScene", { levelIndex }));
+    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("GameScene", {
+      levelIndex, newCyclePlus: this.newCyclePlus, runTimeMs: this.runTimeMs
+    }));
   }
 
   returnToMenu() {
@@ -1010,6 +1223,7 @@ export class GameScene extends Phaser.Scene {
   handleShutdown() {
     this.soundFX?.stopLampFeedback?.();
     this.soundFX?.stopAmbient?.();
+    this.sdk?.gameplayStop?.();
     this.landingDust?.splice(0);
     this.lightDust?.splice(0);
     for (const [event, handler] of this.cleanupHandlers) this.input.off(event, handler, this);
@@ -1025,5 +1239,6 @@ export class GameScene extends Phaser.Scene {
     this.player = null;
     this.playerVisual = null;
     this.soundFX = null;
+    this.sdk = null;
   }
 }
