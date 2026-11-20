@@ -1,0 +1,9 @@
+:root { color-scheme: dark; font-family: "Nunito", system-ui, sans-serif; background: #070714; }
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #070714; }
+body { display: grid; place-items: center; }
+#game-shell { position: relative; width: min(100vw, 160vh); height: min(100vh, 62.5vw); min-height: 320px; overflow: hidden; background: #0b0b20; box-shadow: 0 0 80px #27206b55; }
+#game, #game canvas { width: 100%; height: 100%; display: block; }
+.screen-hint { position: absolute; z-index: 2; top: 14px; left: 18px; color: #b9c8ff99; font-size: 11px; font-weight: 900; letter-spacing: .2em; pointer-events: none; }
+.screen-hint span { color: #70eaff; padding: 0 5px; }
+@media (max-aspect-ratio: 1/1) { #game-shell { width: 100vw; height: 70vh; min-height: 0; } }
