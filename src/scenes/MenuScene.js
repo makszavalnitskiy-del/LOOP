@@ -1,6 +1,6 @@
 import { LEVELS, CHAPTERS } from "../data/levels.js";
 import { YandexSDK } from "../platform/YandexSDK.js";
-import { t, detectLanguage, normalizeLanguage } from "../i18n/translations.js";
+import { t, detectLanguage, normalizeLanguage, getLevelTranslation } from "../i18n/translations.js";
 
 const LEGACY_PROGRESS_KEYS = ["loop_progress_v1", "loop_progress", "loopProgress"];
 const MAX_LEVELS = LEVELS.length;
@@ -30,6 +30,7 @@ export class MenuScene extends Phaser.Scene {
     this.createBackground(this.scale.width, this.scale.height);
     this.createStarField(this.scale.width, this.scale.height);
     this.renderMenu();
+    this.restoreSavedLanguage();
 
     if (!this.readyRequested) {
       this.readyRequested = true;
@@ -48,6 +49,19 @@ export class MenuScene extends Phaser.Scene {
 
   update(time) {
     this.drawStars(time);
+  }
+
+  async restoreSavedLanguage() {
+    try {
+      const settings = await this.sdk?.loadSettings?.();
+      const savedLanguage = settings?.language ? normalizeLanguage(settings.language) : null;
+      if (savedLanguage && savedLanguage !== this.language && this.scene.isActive()) {
+        this.language = savedLanguage;
+        this.renderMenu();
+      }
+    } catch (error) {
+      console.warn("[LOOP] Не удалось загрузить настройки языка:", error);
+    }
   }
 
   createBackground(w, h) {
@@ -156,7 +170,7 @@ export class MenuScene extends Phaser.Scene {
     const languageLabel = this.language.toUpperCase();
     this.addButton(this.ui, w - 68, 35, 92, 30, languageLabel, () => {
       this.language = this.language === "ru" ? "en" : "ru";
-      this.sdk?.saveSettings?.({ language: this.language }).catch?.(() => {});
+      Promise.resolve(this.sdk?.saveSettings?.({ language: this.language })).catch(() => {});
       this.renderMenu();
     }, 0x252b60, 0x4654a2, "11px");
 
@@ -209,7 +223,7 @@ export class MenuScene extends Phaser.Scene {
         levelWidth,
         108,
         label,
-        level.title,
+        getLevelTranslation(level.id, this.language).title || level.title,
         stars,
         Number.isFinite(bestTime) && bestTime > 0 ? bestTime : null,
         completed,
