@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#070714">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%2309091b%22/%3E%3Cpath d=%22M16 14v36h8V28l8 12 8-12v22h8V14h-9L32 27 25 14z%22 fill=%22%2378eaff%22/%3E%3C/svg%3E" type="image/svg+xml">
   <meta name="description" content="LOOP: Последний цикл — неоновая 2D-головоломка о свете и тенях.">
+  <meta property="og:title" content="LOOP: Последний цикл">
+  <meta property="og:description" content="Неоновая 2D-головоломка о свете, тенях и памяти. Проведи Арзона и Пуши через шесть испытаний Цикла.">
+  <meta property="og:type" content="website">
   <title>LOOP: Последний цикл</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,6 +28,11 @@
       </div>
     </div>
   </main>
+  <script>
+    document.addEventListener("contextmenu", event => event.preventDefault());
+    document.addEventListener("selectstart", event => event.preventDefault());
+    document.addEventListener("dragstart", event => event.preventDefault());
+  </script>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
