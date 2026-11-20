@@ -577,7 +577,11 @@ export class GameScene extends Phaser.Scene {
     this.finalActText?.setText(labels[phase] ?? "");
     this.finalActText?.setColor(phase === 1 ? "#b9d9ff" : phase === 2 ? "#d9b9ff" : "#ffe1a3");
     if (phase === 2) {
-      this.tweens.add({ targets: this.backdropGraphics, alpha: 0.94, duration: 1500, ease: "Sine.easeInOut" });
+      this.finalPaletteOverlay = this.add.graphics().setDepth(-19);
+      this.finalPaletteOverlay.fillGradientStyle(0x24154c, 0x512b70, 0xb77a48, 0x21183f, 0.72);
+      this.finalPaletteOverlay.fillRect(0, 0, this.level.world.width, this.level.world.height);
+      this.finalPaletteOverlay.setAlpha(0);
+      this.tweens.add({ targets: this.finalPaletteOverlay, alpha: 0.82, duration: 1700, ease: "Sine.easeInOut" });
       this.cameras.main.flash(650, 120, 75, 180);
       this.soundFX?.playBridgeLock?.();
     } else if (phase === 3) {
@@ -1031,6 +1035,13 @@ export class GameScene extends Phaser.Scene {
     dawn.fillRect(0, 0, this.scale.width, this.scale.height);
     dawn.setAlpha(0);
     this.tweens.add({ targets: dawn, alpha: 0.76, duration: 2600, ease: "Sine.easeInOut" });
+    const impulse = this.add.circle(this.player.x, this.player.y - 6, 18, 0xffe5ad, 0.88).setDepth(90);
+    impulse.setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({
+      targets: impulse, scale: 18, alpha: 0, duration: 1050, delay: 1750,
+      ease: "Cubic.easeOut", onStart: () => this.cameras.main.flash(520, 255, 226, 170),
+      onComplete: () => impulse.destroy()
+    });
     this.tweens.add({
       targets: [this.playerVisual, this.pushi, this.arzonAura, this.pushiAura],
       alpha: 0.12, scale: 1.5, duration: 650, delay: 1450, ease: "Cubic.easeOut"
