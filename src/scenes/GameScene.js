@@ -123,7 +123,28 @@ export class GameScene extends Phaser.Scene {
     graphics.lineStyle(1, 0x7584df, 0.08);
     for (let x = 0; x < width; x += 80) graphics.lineBetween(x, 0, x, height);
     for (let y = 0; y < height; y += 80) graphics.lineBetween(0, y, width, y);
-    const stars = this.add.graphics().setDepth(-19);
+    const farRuins = this.add.graphics().setDepth(-18).setScrollFactor(0.12, 0.22);
+    farRuins.fillStyle(0x20234f, 0.34);
+    for (let x = -40; x < width + 180; x += 190) {
+      const h = Phaser.Math.Between(65, 150);
+      farRuins.fillRect(x, 430 - h, Phaser.Math.Between(55, 115), h);
+      farRuins.fillStyle(0x080a20, 0.72);
+      farRuins.fillRect(x + 14, 430 - h + 22, 9, 24);
+      farRuins.fillStyle(0x20234f, 0.34);
+    }
+    const midRuins = this.add.graphics().setDepth(-17).setScrollFactor(0.3, 0.38);
+    for (let x = 40; x < width + 220; x += 280) {
+      midRuins.fillStyle(0x29285c, 0.28);
+      midRuins.fillTriangle(x, 430, x + 55, 300, x + 110, 430);
+      midRuins.fillStyle(0x4b4a8b, 0.18);
+      midRuins.fillTriangle(x + 28, 430, x + 55, 300, x + 80, 430);
+    }
+    const mist = this.add.graphics().setDepth(-16).setScrollFactor(0.52, 0.68);
+    for (let i = 0; i < 8; i++) {
+      mist.fillStyle(i % 2 ? 0x7256d8 : 0x4c9bd0, 0.035);
+      mist.fillEllipse(i * width / 7, 420 + Math.sin(i) * 22, 300, 74);
+    }
+    const stars = this.add.graphics().setDepth(-15);
     for (let i = 0; i < Math.ceil(width / 12); i++) {
       const x = Phaser.Math.Between(0, width);
       const y = Phaser.Math.Between(20, 390);
@@ -224,8 +245,9 @@ export class GameScene extends Phaser.Scene {
     const start = this.level.lampStart;
     const bounds = this.level.lampBounds;
     this.lampBounds = bounds;
-    this.lampGlow = this.add.circle(start.x, start.y, 82, 0x4bdfff, 0.085).setDepth(9);
-    this.tweens.add({ targets: this.lampGlow, scale: { from: 0.9, to: 1.12 }, alpha: { from: 0.05, to: 0.13 }, duration: 1400, yoyo: true, repeat: -1 });
+    this.lampGlow = this.add.circle(start.x, start.y, 112, 0x4bdfff, 0.045).setDepth(9);
+    this.lampCoreGlow = this.add.circle(start.x, start.y, 36, 0x72eaff, 0.12).setDepth(11);
+    this.tweens.add({ targets: this.lampGlow, scale: { from: 0.92, to: 1.16 }, alpha: { from: 0.035, to: 0.09 }, duration: 1800, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.lamp = this.add.container(start.x, start.y).setDepth(12);
     const lampGraphic = this.add.graphics();
     lampGraphic.fillStyle(0x55eaff, 0.16); lampGraphic.fillCircle(0, 0, 31);
@@ -242,6 +264,11 @@ export class GameScene extends Phaser.Scene {
     this.lamp.on("pointerupoutside", pointer => { if (this.lampDragPointerId === pointer.id) this.lampDragPointerId = null; });
     this.rayGraphics = this.add.graphics().setDepth(10);
     this.shadowGraphics = this.add.graphics().setDepth(4);
+    this.lightDustGraphics = this.add.graphics().setDepth(10);
+    this.lightDust = Array.from({ length: 22 }, (_, index) => ({
+      phase: index * 2.399, speed: 0.35 + (index % 5) * 0.09,
+      radius: 0.7 + (index % 3) * 0.35, drift: 12 + (index % 4) * 7
+    }));
   }
 
   createPlayer() {
@@ -260,6 +287,9 @@ export class GameScene extends Phaser.Scene {
     this.arzonBaseScaleX = this.arzon.scaleX;
     this.arzonBaseScaleY = this.arzon.scaleY;
     this.playerVisual.add(this.arzon);
+    this.arzonAura = this.add.circle(start.x, start.y, 43, 0x53eaff, 0.075).setDepth(19);
+    this.landingDustGraphics = this.add.graphics().setDepth(19);
+    this.landingDust = [];
     this.playerVisual.setScale(1);
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     this.wasGrounded = false;
@@ -273,6 +303,8 @@ export class GameScene extends Phaser.Scene {
     this.pushi = this.add.image(start.x - 55, start.y, "pushi").setDisplaySize(78, 78).setDepth(15);
     this.pushiBaseScaleX = this.pushi.scaleX;
     this.pushiBaseScaleY = this.pushi.scaleY;
+    this.pushiTarget = new Phaser.Math.Vector2(start.x - 55, start.y);
+    this.pushiDanger = false;
   }
 
   createPortal() {
@@ -495,9 +527,12 @@ export class GameScene extends Phaser.Scene {
         this.rayGraphics.lineBetween(this.lamp.x, this.lamp.y, obstacle.x + obstacle.width / 2, obstacle.y);
         this.rayGraphics.lineBetween(obstacle.x + obstacle.width / 2, obstacle.y, shadow.projectedRight, this.worldGroundY);
       }
+      const coverage = Phaser.Math.Clamp(Number(shadow.coverage) || 0, 0, 1);
+      const material = shadow.active ? 1 : Phaser.Math.Clamp(coverage * 0.88, 0, 0.88);
+      item.material = Phaser.Math.Linear(item.material ?? 0, material, 0.24);
       item.active = shadow.active;
       item.bridge.body.enable = shadow.active;
-      if (shadow.active) {
+      if (shadow.width > 0 && shadow.polygon.length) {
         const centerX = shadow.x + shadow.width / 2;
         item.bridge.setPosition(centerX, this.worldGroundY - 5);
         item.bridge.setSize(shadow.width, 12);
@@ -505,13 +540,20 @@ export class GameScene extends Phaser.Scene {
         item.bridge.body.updateFromGameObject();
         item.glow.setPosition(centerX, this.worldGroundY - 5);
         item.glow.setSize(shadow.width, 22);
-        item.bridge.setAlpha(0.9);
-        item.bridge.setStrokeStyle(2, 0x8bf4ff, 0.85);
-        item.glow.setAlpha(0.32);
+        item.bridge.setAlpha(0.12 + item.material * 0.82);
+        item.bridge.setFillStyle(0x69eaff, 0.1 + item.material * 0.62);
+        item.bridge.setStrokeStyle(2, 0x8bf4ff, 0.12 + item.material * 0.78);
+        item.glow.setAlpha(0.035 + item.material * 0.31);
+        if (shadow.active) {
+          const ripple = (this.time.now / 520 + item.gap.x * 0.013) % 1;
+          this.shadowGraphics.lineStyle(2, 0xc9fbff, 0.55);
+          const rippleX = item.gap.x + ripple * item.gap.width;
+          this.shadowGraphics.lineBetween(rippleX, this.worldGroundY - 14, rippleX + 18, this.worldGroundY - 14);
+        }
       } else {
-        item.bridge.setAlpha(0.055);
-        item.bridge.setStrokeStyle(1, 0x6deaff, 0.12);
-        item.glow.setAlpha(0.035);
+        item.bridge.setAlpha(0.04);
+        item.bridge.setStrokeStyle(1, 0x6deaff, 0.08);
+        item.glow.setAlpha(0.02);
       }
     }
   }
@@ -524,6 +566,8 @@ export class GameScene extends Phaser.Scene {
     this.updateAllBridges();
     this.updatePlayerMovement(time);
     this.updateCharacterVisuals(time);
+    this.updateLightAtmosphere(time);
+    this.updateLandingDust(safeDelta);
     this.checkDeath();
     this.checkPortal();
   }
@@ -561,6 +605,7 @@ export class GameScene extends Phaser.Scene {
     const moving = grounded && Math.abs(vx) > 18;
     if (grounded && !this.wasGrounded) {
       this.landSquash = 1;
+      this.emitLandingDust();
       this.soundFX?.playLand?.();
     }
     this.wasGrounded = grounded;
@@ -568,16 +613,28 @@ export class GameScene extends Phaser.Scene {
     const bob = grounded ? (moving ? Math.abs(Math.sin(time / 72)) * 3 : Math.sin(time / 260) * 2) : 0;
     this.playerVisual.setPosition(this.player.x, this.player.y + bob);
     this.playerVisual.setScale(this.facing, 1);
-    const sx = grounded ? 1 + this.landSquash * (moving ? 0.1 : 0.16) : 0.91;
-    const sy = grounded ? 1 - this.landSquash * (moving ? 0.08 : 0.12) : 1.13;
+    const speedRatio = Phaser.Math.Clamp(vx / PLAYER_SPEED, -1, 1);
+    const sx = grounded ? 1 + this.landSquash * (moving ? 0.12 : 0.18) : 0.82;
+    const sy = grounded ? 1 - this.landSquash * (moving ? 0.1 : 0.14) : 1.2;
     this.arzon.setScale(this.arzonBaseScaleX * sx, this.arzonBaseScaleY * sy);
     this.arzon.y = -10 + bob * 0.25;
-    this.arzon.angle = grounded ? Math.sin(time / (moving ? 95 : 310)) * (moving ? 2.4 : 1.2) : Phaser.Math.Clamp(vx / PLAYER_SPEED, -1, 1) * 4;
+    this.arzon.angle = grounded
+      ? (moving ? speedRatio * 8 : Math.sin(time / 310) * 1.4)
+      : Phaser.Math.Clamp(speedRatio * 7, -9, 9);
+    this.arzonAura.setPosition(this.player.x, this.player.y - 4);
+    const nearestBridge = this.bridges.reduce((nearest, bridge) => {
+      const distance = Math.abs((bridge.gap.x + bridge.gap.width / 2) - this.player.x);
+      return !nearest || distance < nearest.distance ? { bridge, distance } : nearest;
+    }, null);
+    const bridgeNear = nearestBridge && nearestBridge.distance < 260 && nearestBridge.bridge.active;
+    this.arzonAura.setAlpha(bridgeNear ? 0.15 : 0.065);
+    this.arzonAura.setFillStyle(bridgeNear ? 0x9c8bff : 0x53eaff, bridgeNear ? 0.14 : 0.065);
 
     const targetX = this.player.x - this.facing * 64;
     const targetY = this.player.y + (grounded ? 8 : 20);
-    this.pushi.x = Phaser.Math.Linear(this.pushi.x, targetX, 0.1);
-    this.pushi.y = Phaser.Math.Linear(this.pushi.y, targetY + Math.sin(time / 190) * 3, 0.11);
+    this.pushiTarget.set(targetX, targetY);
+    this.pushi.x = Phaser.Math.Linear(this.pushi.x, this.pushiTarget.x, 0.085);
+    this.pushi.y = Phaser.Math.Linear(this.pushi.y, this.pushiTarget.y + Math.sin(time / 190) * 3, 0.095);
     this.pushi.flipX = this.facing < 0;
     const pulse = Math.sin(time / 145) * 0.035;
     this.pushi.setScale(this.pushiBaseScaleX * (1 + pulse), this.pushiBaseScaleY * (1 - pulse));
@@ -585,6 +642,72 @@ export class GameScene extends Phaser.Scene {
     this.pushiAura.setPosition(this.pushi.x, this.pushi.y + 4);
     this.pushiShadow.setPosition(this.pushi.x, this.worldGroundY + 39);
     this.pushiShadow.setScale(grounded ? 1 : 0.72, 1);
+    const nearEdge = this.gaps.some(gap =>
+      this.player.x > gap.x - 82 && this.player.x < gap.x + gap.width + 82
+    );
+    this.pushiDanger = nearEdge && !this.bridges.every(bridge => bridge.active);
+    this.pushiAura.setFillStyle(this.pushiDanger ? 0xff668f : (bridgeNear ? 0x72eaff : 0x9b63ff), this.pushiDanger ? 0.2 : 0.1);
+    this.pushiAura.setAlpha(this.pushiDanger ? 0.24 : 0.1);
+    this.pushi.setTint(this.pushiDanger ? 0xffc4df : 0xffffff);
+    this.pushi.angle = Math.sin(time / (this.pushiDanger ? 150 : 330)) * (this.pushiDanger ? 4.5 : 2.2);
+  }
+
+  updateLightAtmosphere(time) {
+    if (!this.lamp || !this.lightDustGraphics) return;
+    this.lampGlow.setPosition(this.lamp.x, this.lamp.y);
+    this.lampCoreGlow.setPosition(this.lamp.x, this.lamp.y);
+    const pulse = 1 + Math.sin(time / 210) * 0.08;
+    this.lampCoreGlow.setScale(pulse);
+    this.lampCoreGlow.setAlpha(0.1 + (pulse - 0.92) * 0.22);
+    this.lightDustGraphics.clear();
+    const coneTopX = this.lamp.x + 520;
+    const coneBottomY = this.worldGroundY + 4;
+    this.lightDustGraphics.fillStyle(0x54dfff, 0.018);
+    this.lightDustGraphics.fillTriangle(this.lamp.x - 24, this.lamp.y, coneTopX, coneBottomY, this.lamp.x + 24, this.lamp.y);
+    this.lightDustGraphics.lineStyle(1, 0x6beaff, 0.07);
+    this.lightDustGraphics.lineBetween(this.lamp.x, this.lamp.y, coneTopX, coneBottomY);
+    this.lightDustGraphics.lineBetween(this.lamp.x, this.lamp.y, this.lamp.x - 180, coneBottomY);
+    for (const dust of this.lightDust) {
+      const drift = (time * 0.00006 * dust.speed + dust.phase) % 1;
+      const x = this.lamp.x + 28 + drift * 390;
+      const y = this.lamp.y + (this.worldGroundY - this.lamp.y) * drift + Math.sin(time * 0.001 + dust.phase) * dust.drift;
+      const fade = Math.sin(drift * Math.PI) * 0.36;
+      this.lightDustGraphics.fillStyle(0x9cefff, fade);
+      this.lightDustGraphics.fillCircle(x, y, dust.radius);
+    }
+  }
+
+  updateLandingDust(delta) {
+    if (!this.landingDustGraphics) return;
+    this.landingDustGraphics.clear();
+    const step = delta / 1000;
+    for (let index = this.landingDust.length - 1; index >= 0; index--) {
+      const particle = this.landingDust[index];
+      particle.life -= step;
+      particle.x += particle.vx * step;
+      particle.y += particle.vy * step;
+      particle.vy += 90 * step;
+      if (particle.life <= 0) {
+        this.landingDust.splice(index, 1);
+        continue;
+      }
+      this.landingDustGraphics.fillStyle(0x8feeff, particle.life / particle.maxLife * 0.55);
+      this.landingDustGraphics.fillCircle(particle.x, particle.y, particle.size * (particle.life / particle.maxLife));
+    }
+  }
+
+  emitLandingDust() {
+    for (let index = 0; index < 7; index++) {
+      const angle = Math.PI + (index / 6) * Math.PI;
+      const speed = 24 + (index % 3) * 13;
+      this.landingDust.push({
+        x: this.player.x + Phaser.Math.Between(-9, 9),
+        y: this.player.body.bottom - 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed * 0.55,
+        life: 0.34, maxLife: 0.34, size: 1.4 + (index % 2) * 0.8
+      });
+    }
   }
 
   checkDeath() {
@@ -717,6 +840,8 @@ export class GameScene extends Phaser.Scene {
 
   handleShutdown() {
     this.soundFX?.stopAmbient?.();
+    this.landingDust?.splice(0);
+    this.lightDust?.splice(0);
     for (const [event, handler] of this.cleanupHandlers) this.input.off(event, handler, this);
     this.cleanupHandlers.length = 0;
     if (this.input.keyboard && this.keyboardJumpHandler) this.input.keyboard.off("keydown", this.keyboardJumpHandler);
