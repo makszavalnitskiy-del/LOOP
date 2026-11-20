@@ -51,7 +51,7 @@ if (missing.length) {
 
   const html = fs.readFileSync(path.join(dist, "index.html"), "utf8");
   const css = fs.readFileSync(path.join(dist, "style.css"), "utf8");
-  const urls = (html + "\\n" + css).match(/https?:\\/\\/[A-Za-z0-9.-]+/gi) ?? [];
+  const urls = (html + "\n" + css).match(/https?:\/\/[A-Za-z0-9.-]+/gi) ?? [];
   const external = urls.filter(url => !/^https?:\/\/yandex\.ru\//i.test(url));
   if (external.length) {
     fs.rmSync(dist, { recursive: true, force: true });
