@@ -234,14 +234,14 @@ export class GameScene extends Phaser.Scene {
 
   createBridge(obstacleData, gap) {
     const centerX = gap.x + gap.width / 2;
-    const bridge = this.add.rectangle(centerX, this.worldGroundY - 5, gap.width, 12, 0x69eaff, 0.08)
+    const bridge = this.add.rectangle(centerX, this.worldGroundY + 6, gap.width, 12, 0x69eaff, 0.08)
       .setStrokeStyle(2, 0x83f1ff, 0.12).setDepth(5);
     this.physics.add.existing(bridge);
     bridge.body.setAllowGravity(false);
     bridge.body.setImmovable(true);
     bridge.body.setSize(gap.width, 12);
     bridge.body.enable = false;
-    const glow = this.add.rectangle(centerX, this.worldGroundY - 5, gap.width, 22, 0x45dfff, 0.05).setDepth(4);
+    const glow = this.add.rectangle(centerX, this.worldGroundY + 6, gap.width, 22, 0x45dfff, 0.05).setDepth(4);
     this.bridges.push({
       id: obstacleData?.bridgeId ?? "bridge-" + (this.bridges.length + 1),
       obstacleId: obstacleData?.id ?? null,
@@ -517,7 +517,7 @@ export class GameScene extends Phaser.Scene {
     const body = this.player?.body;
     if (!body) return;
     const overlapsX = body.right > item.gap.x && body.left < item.gap.x + item.gap.width;
-    const bridgeTop = this.worldGroundY - 11;
+    const bridgeTop = this.worldGroundY;
     const overlapsY = body.bottom > bridgeTop && body.top < this.worldGroundY + 8;
     if (overlapsX && overlapsY && body.velocity.y >= 0) {
       this.player.y = bridgeTop - body.height / 2;
@@ -643,11 +643,11 @@ export class GameScene extends Phaser.Scene {
       item.bridge.body.enable = shadow.active;
       if (shadow.width > 0 && shadow.polygon.length) {
         const centerX = shadow.x + shadow.width / 2;
-        item.bridge.setPosition(centerX, this.worldGroundY - 5);
+        item.bridge.setPosition(centerX, this.worldGroundY + 6);
         item.bridge.setSize(shadow.width, 12);
         item.bridge.body.setSize(shadow.width, 12);
         item.bridge.body.updateFromGameObject();
-        item.glow.setPosition(centerX, this.worldGroundY - 5);
+        item.glow.setPosition(centerX, this.worldGroundY + 6);
         item.glow.setSize(shadow.width, 22);
         item.bridge.setAlpha(0.12 + item.material * 0.82);
         item.bridge.setFillStyle(0x69eaff, 0.1 + item.material * 0.62);
@@ -657,7 +657,7 @@ export class GameScene extends Phaser.Scene {
           const ripple = (this.time.now / 520 + item.gap.x * 0.013) % 1;
           this.shadowGraphics.lineStyle(2, 0xc9fbff, 0.55);
           const rippleX = item.gap.x + ripple * item.gap.width;
-          this.shadowGraphics.lineBetween(rippleX, this.worldGroundY - 14, rippleX + 18, this.worldGroundY - 14);
+          this.shadowGraphics.lineBetween(rippleX, this.worldGroundY - 2, rippleX + 18, this.worldGroundY - 2);
         }
       } else {
         item.bridge.setAlpha(0.04);
