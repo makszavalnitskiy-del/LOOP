@@ -245,7 +245,7 @@ export class GameScene extends Phaser.Scene {
     this.bridges.push({
       id: obstacleData?.bridgeId ?? "bridge-" + (this.bridges.length + 1),
       obstacleId: obstacleData?.id ?? null,
-      gap, bridge, glow, active: false, shadow: null, material: 0
+      gap, bridge, glow, active: false, fixed: false, fixedShadow: null, shadow: null, material: 0
     });
   }
 
@@ -612,14 +612,16 @@ export class GameScene extends Phaser.Scene {
         item.bridge.setAlpha(0.06);
         continue;
       }
-      const shadow = ShadowProjection.calculate({
-        lightX: this.lamp.x,
-        lightY: this.lamp.y,
-        obstacle: { x: obstacle.x, y: obstacle.y, width: obstacle.width, height: obstacle.height },
-        groundY: this.worldGroundY,
-        gapStart: item.gap.x,
-        gapEnd: item.gap.x + item.gap.width
-      });
+      const shadow = item.fixed && item.fixedShadow
+        ? item.fixedShadow
+        : ShadowProjection.calculate({
+          lightX: this.lamp.x,
+          lightY: this.lamp.y,
+          obstacle: { x: obstacle.x, y: obstacle.y, width: obstacle.width, height: obstacle.height },
+          groundY: this.worldGroundY,
+          gapStart: item.gap.x,
+          gapEnd: item.gap.x + item.gap.width
+        });
       item.shadow = shadow;
       const color = obstacle.data.color ?? 0x70eaff;
       if (shadow.polygon.length) {
@@ -637,10 +639,20 @@ export class GameScene extends Phaser.Scene {
       const material = shadow.active ? 1 : Phaser.Math.Clamp(coverage * 0.88, 0, 0.88);
       item.material = Phaser.Math.Linear(item.material ?? 0, material, 0.24);
       const wasActive = item.active;
-      item.active = shadow.active;
-      if (shadow.active && !wasActive) { this.ejectPlayerFromBridge(item); this.soundFX?.playBridge?.(); }
-      else if (!shadow.active && wasActive) this.soundFX?.playBridgeFade?.();
-      item.bridge.body.enable = shadow.active;
+      const canLock = this.gaps.length > 1 && obstacle.data.type === "crystal" && !obstacle.data.patrol;
+      if (!item.fixed && canLock && shadow.active) {
+        item.fixed = true;
+        item.fixedShadow = shadow;
+        this.ejectPlayerFromBridge(item);
+        this.soundFX?.playBridgeLock?.();
+      } else if (!item.fixed && shadow.active && !wasActive) {
+        this.ejectPlayerFromBridge(item);
+        this.soundFX?.playBridge?.();
+      } else if (!item.fixed && !shadow.active && wasActive) {
+        this.soundFX?.playBridgeFade?.();
+      }
+      item.active = item.fixed || shadow.active;
+      item.bridge.body.enable = item.active;
       if (shadow.width > 0 && shadow.polygon.length) {
         const centerX = shadow.x + shadow.width / 2;
         item.bridge.setPosition(centerX, this.worldGroundY + 6);
@@ -650,10 +662,11 @@ export class GameScene extends Phaser.Scene {
         item.glow.setPosition(centerX, this.worldGroundY + 6);
         item.glow.setSize(shadow.width, 22);
         item.bridge.setAlpha(0.12 + item.material * 0.82);
-        item.bridge.setFillStyle(0x69eaff, 0.1 + item.material * 0.62);
-        item.bridge.setStrokeStyle(2, 0x8bf4ff, 0.12 + item.material * 0.78);
-        item.glow.setAlpha(0.035 + item.material * 0.31);
-        if (shadow.active) {
+        item.bridge.setFillStyle(item.fixed ? 0x9b75ff : 0x69eaff, item.fixed ? 0.72 : 0.1 + item.material * 0.62);
+        item.bridge.setStrokeStyle(item.fixed ? 3 : 2, item.fixed ? 0xffd98a : 0x8bf4ff, item.fixed ? 0.98 : 0.12 + item.material * 0.78);
+        item.glow.setFillStyle(item.fixed ? 0xb68aff : 0x45dfff, item.fixed ? 0.18 : 0.05);
+        item.glow.setAlpha(item.fixed ? 0.42 : 0.035 + item.material * 0.31);
+        if (item.active) {
           const ripple = (this.time.now / 520 + item.gap.x * 0.013) % 1;
           this.shadowGraphics.lineStyle(2, 0xc9fbff, 0.55);
           const rippleX = item.gap.x + ripple * item.gap.width;
@@ -848,6 +861,7 @@ export class GameScene extends Phaser.Scene {
   killPlayer() {
     if (this.dead || this.completed) return;
     this.dead = true;
+    this.resetFixedBridges();
     this.player.body.enable = false;
     this.playerVisual.setVisible(false);
     this.pushi.setAlpha(0.25);
@@ -951,7 +965,23 @@ export class GameScene extends Phaser.Scene {
     if (result?.catch) result.catch(error => console.warn("[LOOP] Audio unlock failed:", error));
   }
 
+  resetFixedBridges() {
+    for (const item of this.bridges ?? []) {
+      if (!item.fixed) continue;
+      item.fixed = false;
+      item.fixedShadow = null;
+      item.active = false;
+      item.material = 0;
+      if (item.bridge?.body) item.bridge.body.enable = false;
+      item.bridge?.setFillStyle(0x69eaff, 0.08).setStrokeStyle(2, 0x83f1ff, 0.12).setAlpha(0.06);
+      item.glow?.setFillStyle(0x45dfff, 0.05).setAlpha(0.02);
+    }
+    this.enteredBridges?.clear();
+    this.crossedBridges?.clear();
+  }
+
   restartLevel() {
+    this.resetFixedBridges();
     if (this.paused) this.closePause();
     if (this.transitioning) return;
     this.transitioning = true;
