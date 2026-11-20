@@ -1,3 +1,5 @@
+import { ShadowProjection } from "../mechanics/shadows/ShadowProjection.js";
+
 export class AwakeningScene extends Phaser.Scene {
   constructor() { super("AwakeningScene"); }
 
@@ -31,10 +33,19 @@ export class AwakeningScene extends Phaser.Scene {
     this.platforms.add(leftFloor);
     this.platforms.add(rightFloor);
 
-    // Shadow bridge, activated by positioning the lamp in its marked zone.
+    // Floating crystal blocks the light and casts a real geometric shadow onto the gap.
+    this.occluder = { x: 280, y: 360, width: 120, height: 60 };
+    this.occluderArt = this.add.rectangle(340, 390, 120, 60, 0x342b70, .95)
+      .setStrokeStyle(2, 0x9a82ff, .9);
+    this.add.rectangle(340, 390, 94, 36, 0x6d5bcb, .18).setStrokeStyle(1, 0x6eeaff, .5);
+
+    // The bridge is a physics body whose position and width follow the projected shadow.
+    this.shadowShape = this.add.graphics();
     this.bridgeGlow = this.add.rectangle(510, 496, 220, 13, 0x3ceaff, .18);
     this.bridge = this.add.rectangle(510, 496, 220, 13, 0x68eaff, .08).setStrokeStyle(2, 0x70eaff, .15);
-    this.physics.add.existing(this.bridge, true);
+    this.physics.add.existing(this.bridge);
+    this.bridge.body.setAllowGravity(false);
+    this.bridge.body.setImmovable(true);
     this.bridge.body.enable = false;
     this.bridgeActive = false;
 
@@ -70,8 +81,8 @@ export class AwakeningScene extends Phaser.Scene {
     this.pushi.add(pet);
 
     // Draggable lamp and its light pool.
-    this.lampGlow = this.add.circle(180, 350, 78, 0x55dfff, .09);
-    this.lamp = this.add.container(180, 350);
+    this.lampGlow = this.add.circle(500, 250, 78, 0x55dfff, .09);
+    this.lamp = this.add.container(500, 250);
     const lampArt = this.add.graphics();
     lampArt.fillStyle(0x55eaff, .18); lampArt.fillCircle(0, 0, 30);
     lampArt.fillStyle(0x9bf7ff, 1); lampArt.fillCircle(0, 0, 12);
@@ -103,23 +114,48 @@ export class AwakeningScene extends Phaser.Scene {
     this.add.text(48, 565, "A / D или ← / →  ДВИЖЕНИЕ     SPACE / W / ↑  ПРЫЖОК", { fontFamily: "Nunito", fontSize: "12px", fontStyle: "800", color: "#9ca8d8" });
     this.add.text(510, 565, "ПЕРЕТАЩИ ЛАМПУ МЫШЬЮ", { fontFamily: "Nunito", fontSize: "12px", fontStyle: "900", color: "#65eaff" }).setOrigin(.5);
     this.message = this.add.text(480, 135, "Найди положение света, чтобы тень стала мостом", { fontFamily: "Nunito", fontSize: "15px", fontStyle: "800", color: "#a9f5ff", backgroundColor: "#101631aa", padding: { x: 14, y: 9 } }).setOrigin(.5);
-    this.add.text(480, 170, "ЛАМПА ДОЛЖНА ОКАЗАТЬСЯ В СВЕТЯЩЕЙСЯ ЗОНЕ", { fontFamily: "Nunito", fontSize: "10px", fontStyle: "900", color: "#707da9", letterSpacing: 2 }).setOrigin(.5);
-    this.zone = this.add.circle(315, 350, 52).setStrokeStyle(2, 0x61eaff, .3).setFillStyle(0x61eaff, .035);
+    this.add.text(480, 170, "НАПРАВЬ СВЕТ НА КРИСТАЛЛ, ЧТОБЫ СПРОЕЦИРОВАТЬ ТЕНЬ", { fontFamily: "Nunito", fontSize: "10px", fontStyle: "900", color: "#707da9", letterSpacing: 2 }).setOrigin(.5);
+    this.zone = this.add.circle(100, 200, 52).setStrokeStyle(2, 0x61eaff, .3).setFillStyle(0x61eaff, .035);
     this.tweens.add({ targets: this.zone, alpha: { from: .35, to: .9 }, duration: 900, yoyo: true, repeat: -1 });
-    this.add.text(315, 420, "ЗОНА СВЕТА", { fontFamily: "Nunito", fontSize: "10px", fontStyle: "900", color: "#5bdff5" }).setOrigin(.5);
+    this.zone.setPosition(100, 200);
+    this.add.text(100, 270, "ЗОНА СВЕТА", { fontFamily: "Nunito", fontSize: "10px", fontStyle: "900", color: "#5bdff5" }).setOrigin(.5);
 
     this.physics.world.setBounds(0, 0, W, H);
     this.updateBridge();
   }
 
   updateBridge() {
-    const active = this.lamp.x > 260 && this.lamp.x < 375 && this.lamp.y > 295 && this.lamp.y < 405;
-    if (active === this.bridgeActive) return;
+    const shadow = ShadowProjection.calculate({
+      lightX: this.lamp.x,
+      lightY: this.lamp.y,
+      obstacle: this.occluder,
+      groundY: 496,
+      gapStart: 400,
+      gapEnd: 620
+    });
+
+    this.shadowShape.clear();
+    if (shadow.polygon.length) {
+      this.shadowShape.fillStyle(0x48dfff, shadow.active ? .34 : .10);
+      this.shadowShape.fillPoints(shadow.polygon.map(p => new Phaser.Geom.Point(p.x, p.y)), true);
+      this.shadowShape.lineStyle(2, 0x6feaff, shadow.active ? .7 : .18);
+      this.shadowShape.strokePoints(shadow.polygon.map(p => new Phaser.Geom.Point(p.x, p.y)), true);
+    }
+
+    const active = shadow.active;
+    if (active) {
+      this.bridge.setPosition(shadow.x + shadow.width / 2, 496);
+      this.bridge.setSize(shadow.width, 13);
+      this.bridge.body.setSize(shadow.width, 13);
+      this.bridge.body.updateFromGameObject();
+    }
     this.bridgeActive = active;
     this.bridge.body.enable = active;
     this.bridge.setAlpha(active ? 1 : .12);
+    this.bridgeGlow.setPosition(active ? shadow.x + shadow.width / 2 : 510, 496);
+    this.bridgeGlow.setSize(active ? shadow.width : 220, 13);
     this.bridgeGlow.setAlpha(active ? .65 : .08);
-    this.message.setText(active ? "Тень обрела форму! Перейди через пропасть." : "Найди положение света, чтобы тень стала мостом");
+    this.message.setText(active ? "Тень рассчитана по лучам света! Перейди через пропасть." : "Измени угол света: тень должна накрыть разрыв");
     this.message.setColor(active ? "#a5ffdf" : "#a9f5ff");
   }
 
