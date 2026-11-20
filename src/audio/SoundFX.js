@@ -10,6 +10,7 @@ export class SoundFX {
     this.lampVoice = null;
     this.lastStepAt = 0;
     this.focusGain = 1;
+    this.masterVolume = 0.24;
     this.onVisibilityChange = () => this.setFocusGain(document.hidden ? 0 : 1);
     this.onWindowBlur = () => this.setFocusGain(0);
     this.onWindowFocus = () => this.setFocusGain(document.hidden ? 0 : 1);
@@ -49,7 +50,7 @@ export class SoundFX {
   applyMasterGain(timeConstant = 0.08) {
     if (!this.context || !this.master || this.context.state === "closed") return;
     const now = this.context.currentTime;
-    const target = this.muted ? 0.0001 : 0.24 * this.focusGain;
+    const target = this.muted ? 0.0001 : this.masterVolume * this.focusGain;
     this.master.gain.cancelScheduledValues(now);
     this.master.gain.setTargetAtTime(target, now, timeConstant);
   }
@@ -69,7 +70,15 @@ export class SoundFX {
 
   toggleMute() { return this.setMuted(!this.muted); }
   isMuted() { return this.muted; }
-  getVolume() { return this.muted ? 0 : 0.24 * this.focusGain; }
+  getVolume() { return this.muted ? 0 : this.masterVolume * this.focusGain; }
+
+  getMasterVolume() { return this.masterVolume; }
+
+  setMasterVolume(value) {
+    this.masterVolume = Math.max(0.03, Math.min(0.4, Number(value) || 0.24));
+    this.applyMasterGain(0.08);
+    return this.masterVolume;
+  }
 
   setLevelAtmosphere(levelIndex = 0) {
     this.levelIndex = Math.max(0, Math.min(2, Math.floor(Number(levelIndex) || 0)));
