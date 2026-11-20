@@ -64,16 +64,17 @@ export class AwakeningScene extends Phaser.Scene {
     this.bridgeCollider = this.physics.add.collider(this.player, this.bridge);
 
     // Illustrated, high-resolution character artwork replaces the temporary primitive drawings.
-    this.playerVisual = this.add.container(this.player.x, this.player.y);
+    this.playerVisual = this.add.container(this.player.x, this.player.y).setDepth(12);
     this.arzonSprite = this.add.image(0, -12, "arzon").setDisplaySize(142, 154);
     this.arzonBaseScaleX = this.arzonSprite.scaleX;
     this.arzonBaseScaleY = this.arzonSprite.scaleY;
     this.playerVisual.add(this.arzonSprite);
 
     // Pushi has an independent aura and follows Arzon with a soft, delayed motion.
-    this.pushiAura = this.add.circle(65, 490, 31, 0x9b63ff, .10);
-    this.pushiShadow = this.add.ellipse(65, 535, 58, 12, 0x080817, .45);
-    this.pushi = this.add.image(65, 490, "pushi").setDisplaySize(138, 138);
+    // Keep the companion clearly separate from the hero and behind him visually.
+    this.pushiShadow = this.add.ellipse(45, 535, 38, 8, 0x080817, .42).setDepth(5);
+    this.pushiAura = this.add.circle(45, 480, 23, 0x9b63ff, .09).setDepth(6);
+    this.pushi = this.add.image(45, 480, "pushi").setDisplaySize(82, 82).setDepth(8);
     this.pushiBaseScaleX = this.pushi.scaleX;
     this.pushiBaseScaleY = this.pushi.scaleY;
 
@@ -245,7 +246,7 @@ export class AwakeningScene extends Phaser.Scene {
     this.arzonSprite.setPosition(0, -9 + bob * .25);
     this.arzonSprite.setScale(this.arzonBaseScaleX * squashX, this.arzonBaseScaleY * squashY);
 
-    const companionTargetX = this.player.x - facing * 48;
+    const companionTargetX = this.player.x - facing * 68;
     const companionTargetY = this.player.y + (grounded ? 8 : 20);
     this.pushi.x = Phaser.Math.Linear(this.pushi.x, companionTargetX, .09);
     this.pushi.y = Phaser.Math.Linear(this.pushi.y, companionTargetY + Math.sin(this.time.now / 190) * 3, .10);
@@ -255,6 +256,7 @@ export class AwakeningScene extends Phaser.Scene {
     this.pushi.angle = Math.sin(this.time.now / 330) * 2.2;
     this.pushiAura.setPosition(this.pushi.x, this.pushi.y + 4);
     this.pushiShadow.setPosition(this.pushi.x, 535);
+    this.pushiShadow.setScale(grounded ? 1 : .72, 1);
     if (this.player.x > 790 && this.player.y > 390 && this.bridgeActive) {
       this.levelComplete = true;
       this.player.setVelocity(0, 0);
