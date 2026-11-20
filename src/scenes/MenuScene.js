@@ -91,17 +91,52 @@ export class MenuScene extends Phaser.Scene {
   }
   createButtons(w, h) {
     const x = w / 2;
-    this.createNeonButton({ x, y: 425, width: 330, height: 58, label: "НАЧАТЬ ПУТЕШЕСТВИЕ", fill: 0x343b9e, hover: 0x4d5bd4, glow: 0x718cff, fontSize: "17px", action: () => this.startGame(1) });
     const progress = this.readSavedProgress();
-    if (progress && progress.level > 1) {
-      this.createNeonButton({ x, y: 495, width: 250, height: 42, label: "ПРОДОЛЖИТЬ", fill: 0x252a68, hover: 0x414a9d, glow: 0x8d79ff, fontSize: "14px", action: () => this.startGame(progress.level) });
+    const unlocked = progress.level;
+    const continueLevel = Math.max(1, Math.min(6, progress.lastPlayed || unlocked));
+    this.createNeonButton({ x, y: 420, width: 310, height: 48, label: "НОВАЯ ИГРА", fill: 0x343b9e, hover: 0x4d5bd4, glow: 0x718cff, fontSize: "16px", action: () => this.newGame(progress) });
+    this.createNeonButton({ x, y: 477, width: 250, height: 38, label: "ПРОДОЛЖИТЬ · УРОВЕНЬ " + continueLevel, fill: 0x252a68, hover: 0x414a9d, glow: 0x8d79ff, fontSize: "12px", action: () => this.startGame(continueLevel) });
+    const columns = w < 620 ? 3 : 6;
+    const tileWidth = Math.min(132, (w - 48) / columns - 8);
+    const gap = 8;
+    const rows = Math.ceil(6 / columns);
+    const gridWidth = columns * tileWidth + (columns - 1) * gap;
+    const startX = (w - gridWidth) / 2 + tileWidth / 2;
+    const top = rows === 1 ? 555 : 535;
+    const completed = new Set(progress.completedLevelsList || []);
+    const names = ["ПРОБУЖДЕНИЕ", "ПРЕЛОМЛЕНИЕ", "МАЯТНИК", "РЕЗОНАНС", "КАСКАД", "ПОСЛЕДНИЙ ЦИКЛ"];
+    for (let index = 0; index < 6; index++) {
+      const id = index + 1;
+      const row = Math.floor(index / columns);
+      const column = index % columns;
+      const tx = startX + column * (tileWidth + gap);
+      const ty = top + row * 52;
+      const locked = id > unlocked;
+      const done = completed.has(id) || id < unlocked;
+      const best = progress.bestTimes?.[id];
+      const label = (locked ? "🔒 " : done ? "✓ " : "") + id + " · " + names[index] + (best ? "  " + Number(best).toFixed(1) + "с" : "");
+      this.createNeonButton({
+        x: tx, y: ty, width: tileWidth, height: 40,
+        label, fill: locked ? 0x171a31 : done ? 0x202d5b : 0x303b87,
+        hover: locked ? 0x171a31 : 0x4655ad, glow: 0x718cff,
+        fontSize: tileWidth < 100 ? "8px" : "9px",
+        action: () => { if (!locked) this.startGame(id); }
+      });
     }
     this.muteButton = this.createNeonButton({
-      x: w - 68, y: 42, width: 92, height: 34, label: this.getMuteLabel(),
-      fill: 0x1c2149, hover: 0x333b78, glow: 0x788aff, fontSize: "11px",
+      x: w - 68, y: 34, width: 104, height: 32, label: this.getMuteLabel(),
+      fill: 0x1c2149, hover: 0x333b78, glow: 0x788aff, fontSize: "10px",
       action: () => { this.unlockAudio(); if (this.soundFX) this.soundFX.toggleMute(); this.muteButton?.setLabel(this.getMuteLabel()); }
     });
   }
+  newGame(progress) {
+    const hasProgress = progress.level > 1 || (progress.completedLevelsList || []).length > 0;
+    if (hasProgress && !window.confirm("Начать новую игру? Сохранённый прогресс и рекорды будут сброшены.")) return;
+    try { localStorage.removeItem(PROGRESS_STORAGE_KEY); } catch {}
+    for (const key of LEGACY_PROGRESS_KEYS) { try { localStorage.removeItem(key); } catch {} }
+    this.startGame(1);
+  }
+
   createNeonButton(options) {
     const { x, y, width, height, label, fill, hover, glow, fontSize, action } = options;
     const visual = this.add.graphics().setPosition(x, y);
@@ -139,23 +174,28 @@ export class MenuScene extends Phaser.Scene {
   }
   getMuteLabel() { return this.soundFX?.isMuted?.() ? "ЗВУК: ВЫКЛ" : "ЗВУК: ВКЛ"; }
   readSavedProgress() {
+    const fallback = { level: 1, lastPlayed: 1, completedLevelsList: [], bestTimes: {} };
     try {
       for (const key of [PROGRESS_STORAGE_KEY, ...LEGACY_PROGRESS_KEYS]) {
         const raw = localStorage.getItem(key);
         if (!raw) continue;
         let parsed;
-        try { parsed = JSON.parse(raw); } catch { parsed = Number(raw); }
-        const candidate = typeof parsed === "number" ? parsed : parsed?.level ?? parsed?.currentLevel ?? parsed?.lastUnlockedLevel ?? parsed?.unlockedLevel;
-        const level = Number(candidate);
-        if (Number.isFinite(level) && level > 1) return { level: Math.min(3, Math.floor(level)) };
+        try { parsed = JSON.parse(raw); } catch { parsed = { level: Number(raw) }; }
+        const level = Number(parsed?.level ?? parsed?.currentLevel ?? parsed?.lastUnlockedLevel ?? parsed?.unlockedLevel ?? 1);
+        return {
+          level: Number.isFinite(level) ? Math.max(1, Math.min(6, Math.floor(level))) : 1,
+          lastPlayed: Math.max(1, Math.min(6, Number(parsed?.lastCompletedLevel ?? parsed?.lastPlayed ?? level) || 1)),
+          completedLevelsList: Array.isArray(parsed?.completedLevelsList) ? parsed.completedLevelsList : [],
+          bestTimes: parsed?.bestTimes && typeof parsed.bestTimes === "object" ? parsed.bestTimes : {}
+        };
       }
     } catch (error) { console.warn("[LOOP] Не удалось прочитать сохранение:", error); }
-    return null;
+    return fallback;
   }
   startGame(levelId) {
     if (this.isTransitioning) return;
     this.isTransitioning = true;
-    this.registry.set("requestedLevelId", Math.max(1, Math.min(3, Math.floor(Number(levelId) || 1))));
+    this.registry.set("requestedLevelId", Math.max(1, Math.min(6, Math.floor(Number(levelId) || 1))));
     this.cameras.main.fadeOut(400, 7, 7, 20);
     this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("GameScene", { levelIndex: this.registry.get("requestedLevelId") - 1 }));
   }
