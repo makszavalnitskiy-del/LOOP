@@ -146,7 +146,7 @@ export const LEVELS = [
     ],
     obstacles: [
       { id: "crystal-static", type: "crystal", x: 280, y: 330, width: 110, height: 74, color: 0x70eaff, movable: false, patrol: null, bridgeId: "bridge-1" },
-      { id: "crystal-patrol", type: "crystal", x: 1030, y: 310, width: 110, height: 76, color: 0xd08cff, movable: true, patrol: { axis: "x", min: 970, max: 1170, speed: 92, start: 1030, direction: 1 }, bridgeId: "bridge-2" },
+      { id: "crystal-patrol", type: "crystal", x: 820, y: 310, width: 110, height: 76, color: 0xd08cff, movable: true, patrol: { axis: "x", min: 780, max: 880, speed: 92, start: 820, direction: 1 }, bridgeId: "bridge-2" },
       { id: "final-laser", type: "barrier", x: 1510, y: 390, width: 26, height: 212, color: 0xff4fd8, movable: false, patrol: null, sensorId: "final-sensor" }
     ],
     sensors: [{ id: "final-sensor", type: "shadow-sensor", x: 175, y: 295, width: 64, height: 64, requiredHold: 1500, targetObstacleId: "final-laser", color: 0x9d83ff }],
