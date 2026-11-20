@@ -119,6 +119,25 @@ export class AwakeningScene extends Phaser.Scene {
     this.tweens.add({ targets: this.portal, alpha: { from: .7, to: 1 }, scale: { from: .96, to: 1.05 }, duration: 1400, yoyo: true, repeat: -1 });
 
     this.keys = this.input.keyboard.addKeys("A,D,W,SPACE,LEFT,RIGHT,UP,R");
+    this.mobileInput = { left: false, right: false, jump: false };
+    if (this.sys.game.device.input.touch) {
+      const addTouchButton = (x, label, key) => {
+        const button = this.add.circle(x, 520, 25, 0x252b68, .78).setStrokeStyle(2, 0x71eaff, .8).setInteractive();
+        this.add.text(x, 520, label, { fontFamily: "Nunito", fontSize: "20px", fontStyle: "900", color: "#dffaff" }).setOrigin(.5);
+        button.on("pointerdown", () => { this.mobileInput[key] = true; });
+        button.on("pointerup", () => { this.mobileInput[key] = false; });
+        button.on("pointerout", () => { this.mobileInput[key] = false; });
+      };
+      addTouchButton(760, "◀", "left");
+      addTouchButton(820, "▶", "right");
+      addTouchButton(900, "↑", "jump");
+      this.input.on("pointerup", () => {
+        this.mobileInput.left = false;
+        this.mobileInput.right = false;
+        this.mobileInput.jump = false;
+      });
+    }
+    this.levelComplete = false;
     this.add.text(48, 565, "A / D или ← / →  ДВИЖЕНИЕ     SPACE / W / ↑  ПРЫЖОК", { fontFamily: "Nunito", fontSize: "12px", fontStyle: "800", color: "#9ca8d8" });
     this.add.text(510, 565, "ПЕРЕТАЩИ ЛАМПУ МЫШЬЮ", { fontFamily: "Nunito", fontSize: "12px", fontStyle: "900", color: "#65eaff" }).setOrigin(.5);
     this.message = this.add.text(480, 135, "Найди положение света, чтобы тень стала мостом", { fontFamily: "Nunito", fontSize: "15px", fontStyle: "800", color: "#a9f5ff", backgroundColor: "#101631aa", padding: { x: 14, y: 9 } }).setOrigin(.5);
@@ -180,11 +199,16 @@ export class AwakeningScene extends Phaser.Scene {
   }
 
   update() {
-    if (Phaser.Input.Keyboard.JustDown(this.keys.R)) { this.scene.restart(); return; }
-    const left = this.keys.A.isDown || this.keys.LEFT.isDown;
-    const right = this.keys.D.isDown || this.keys.RIGHT.isDown;
+    if (Phaser.Input.Keyboard.JustDown(this.keys.R)) {
+      if (this.levelComplete) this.scene.start("MenuScene");
+      else this.scene.restart();
+      return;
+    }
+    if (this.levelComplete) return;
+    const left = this.keys.A.isDown || this.keys.LEFT.isDown || this.mobileInput.left;
+    const right = this.keys.D.isDown || this.keys.RIGHT.isDown || this.mobileInput.right;
     this.player.setVelocityX(left ? -230 : right ? 230 : 0);
-    if ((Phaser.Input.Keyboard.JustDown(this.keys.W) || Phaser.Input.Keyboard.JustDown(this.keys.UP) || Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) && this.player.body.blocked.down) {
+    if ((Phaser.Input.Keyboard.JustDown(this.keys.W) || Phaser.Input.Keyboard.JustDown(this.keys.UP) || Phaser.Input.Keyboard.JustDown(this.keys.SPACE) || this.mobileInput.jump) && this.player.body.blocked.down) {
       this.player.setVelocityY(-430);
     }
     this.playerVisual.setPosition(this.player.x, this.player.y);
@@ -192,9 +216,17 @@ export class AwakeningScene extends Phaser.Scene {
     this.pushi.x = Phaser.Math.Linear(this.pushi.x, this.player.x - 48, .08);
     this.pushi.y = 490 + Math.sin(this.time.now / 220) * 4;
     if (this.player.x > 790 && this.player.y > 390 && this.bridgeActive) {
-      this.message.setText("ПРОБУЖДЕНИЕ ЗАВЕРШЕНО  •  ПРОДОЛЖЕНИЕ СКОРО");
-      this.message.setColor("#d8c7ff");
+      this.levelComplete = true;
       this.player.setVelocity(0, 0);
+      const panel = this.add.container(480, 300).setDepth(30);
+      panel.add(this.add.rectangle(0, 0, 440, 220, 0x0b102d, .97).setStrokeStyle(2, 0x8b7aff, 1));
+      panel.add(this.add.text(0, -65, "ПРОБУЖДЕНИЕ ЗАВЕРШЕНО", { fontFamily: "Nunito", fontSize: "24px", fontStyle: "900", color: "#c9faff" }).setOrigin(.5));
+      panel.add(this.add.text(0, -20, "Арзон нашёл первую дорогу из света.\nНо Пуши помнит, что этот путь уже был...", { fontFamily: "Nunito", fontSize: "15px", fontStyle: "700", color: "#aeb9e8", align: "center", lineSpacing: 8 }).setOrigin(.5));
+      const menuButton = this.add.text(0, 65, "ВЕРНУТЬСЯ В МЕНЮ", { fontFamily: "Nunito", fontSize: "15px", fontStyle: "900", color: "#ffffff", backgroundColor: "#443caa", padding: { x: 22, y: 12 } }).setOrigin(.5).setInteractive({ useHandCursor: true });
+      menuButton.on("pointerover", () => menuButton.setStyle({ backgroundColor: "#5a62d8", color: "#d7fbff" }));
+      menuButton.on("pointerout", () => menuButton.setStyle({ backgroundColor: "#443caa", color: "#ffffff" }));
+      menuButton.on("pointerdown", () => this.scene.start("MenuScene"));
+      panel.add(menuButton);
     }
   }
 }
