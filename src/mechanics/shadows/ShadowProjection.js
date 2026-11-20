@@ -78,6 +78,53 @@ export class ShadowProjection {
     };
   }
 
+  static isPointInsideBounds(point, bounds) {
+    return Boolean(point && bounds &&
+      Number.isFinite(point.x) && Number.isFinite(point.y) &&
+      Number.isFinite(bounds.minX) && Number.isFinite(bounds.maxX) &&
+      Number.isFinite(bounds.minY) && Number.isFinite(bounds.maxY) &&
+      point.x >= bounds.minX && point.x <= bounds.maxX &&
+      point.y >= bounds.minY && point.y <= bounds.maxY);
+  }
+
+  static findFullCoveragePosition({ bounds, obstacle, groundY, gapStart, gapEnd, step = 2 }) {
+    if (!bounds || !obstacle) return null;
+    const increment = Math.max(1, Number(step) || 1);
+    const scan = stride => {
+      for (let y = bounds.minY; y <= bounds.maxY; y += stride) {
+        for (let x = bounds.minX; x <= bounds.maxX; x += stride) {
+          const projection = this.calculate({ lightX: x, lightY: y, obstacle, groundY, gapStart, gapEnd });
+          if (projection.active && projection.fullCoverage && projection.coverage >= 1 - 1e-9) {
+            return { x, y, projection };
+          }
+        }
+      }
+      return null;
+    };
+    return scan(increment) ?? (increment === 1 ? null : scan(1));
+  }
+
+  static findSensorPosition({ bounds, obstacles, groundY, sensor, worldWidth, step = 2 }) {
+    if (!bounds || !Array.isArray(obstacles) || !sensor || !Number.isFinite(worldWidth) || worldWidth <= 0) return null;
+    const increment = Math.max(1, Number(step) || 1);
+    const scan = stride => {
+      for (let y = bounds.minY; y <= bounds.maxY; y += stride) {
+        for (let x = bounds.minX; x <= bounds.maxX; x += stride) {
+          for (const obstacle of obstacles) {
+            const projection = this.calculate({
+              lightX: x, lightY: y, obstacle, groundY, gapStart: 0, gapEnd: worldWidth
+            });
+            if (projection.polygon.length && this.intersectsRect(projection.polygon, sensor)) {
+              return { x, y, obstacleId: obstacle.id ?? null, projection };
+            }
+          }
+        }
+      }
+      return null;
+    };
+    return scan(increment) ?? (increment === 1 ? null : scan(1));
+  }
+
   static intersectsRect(polygon, rect) {
     if (!Array.isArray(polygon) || polygon.length < 3 || !rect) return false;
     const { x, y, width, height } = rect;
