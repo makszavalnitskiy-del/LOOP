@@ -65,15 +65,15 @@ export class AwakeningScene extends Phaser.Scene {
 
     // Illustrated, high-resolution character artwork replaces the temporary primitive drawings.
     this.playerVisual = this.add.container(this.player.x, this.player.y);
-    this.arzonSprite = this.add.image(0, -9, "arzon").setDisplaySize(88, 96);
+    this.arzonSprite = this.add.image(0, -12, "arzon").setDisplaySize(142, 154);
     this.arzonBaseScaleX = this.arzonSprite.scaleX;
     this.arzonBaseScaleY = this.arzonSprite.scaleY;
     this.playerVisual.add(this.arzonSprite);
 
     // Pushi has an independent aura and follows Arzon with a soft, delayed motion.
     this.pushiAura = this.add.circle(65, 490, 31, 0x9b63ff, .10);
-    this.pushiShadow = this.add.ellipse(65, 535, 48, 10, 0x080817, .45);
-    this.pushi = this.add.image(65, 490, "pushi").setDisplaySize(92, 92);
+    this.pushiShadow = this.add.ellipse(65, 535, 58, 12, 0x080817, .45);
+    this.pushi = this.add.image(65, 490, "pushi").setDisplaySize(138, 138);
     this.pushiBaseScaleX = this.pushi.scaleX;
     this.pushiBaseScaleY = this.pushi.scaleY;
 
