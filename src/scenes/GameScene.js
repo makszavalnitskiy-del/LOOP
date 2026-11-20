@@ -217,7 +217,7 @@ export class GameScene extends Phaser.Scene {
       const obstacle = { data, art, core, halo, physicsBody, x: data.x, y: data.y, width: data.width, height: data.height, direction: data.patrol?.direction ?? 1 };
       this.obstacles.push(obstacle);
       if (data.type === "crystal") {
-        const bridgeNumber = Number(String(data.bridgeId ?? "").match(/(\\d+)$/)?.[1]);
+        const bridgeNumber = Number(String(data.bridgeId ?? "").match(/(\d+)$/)?.[1]);
         const gap = Number.isInteger(bridgeNumber) && bridgeNumber > 0
           ? this.gaps[bridgeNumber - 1]
           : this.gaps[crystals.indexOf(data)];
