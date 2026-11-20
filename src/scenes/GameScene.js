@@ -55,6 +55,8 @@ export class GameScene extends Phaser.Scene {
     this.newCyclePlus = Boolean(data.newCyclePlus);
     this.runTimeMs = Math.max(0, Number(data.runTimeMs) || 0);
     this.finaleStarted = false;
+    this.finalPhase = 1;
+    this.paused = false;
     this.dead = false;
     this.completed = false;
     this.transitioning = false;
