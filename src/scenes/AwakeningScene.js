@@ -38,8 +38,10 @@ export class AwakeningScene extends Phaser.Scene {
     this.occluderArt = this.add.rectangle(340, 390, 120, 60, 0x342b70, .95)
       .setStrokeStyle(2, 0x9a82ff, .9);
     this.add.rectangle(340, 390, 94, 36, 0x6d5bcb, .18).setStrokeStyle(1, 0x6eeaff, .5);
+    this.add.text(340, 435, "КРИСТАЛЛ", { fontFamily: "Nunito", fontSize: "9px", fontStyle: "900", color: "#a99aff", letterSpacing: 2 }).setOrigin(.5);
 
     // The bridge is a physics body whose position and width follow the projected shadow.
+    this.lightRays = this.add.graphics();
     this.shadowShape = this.add.graphics();
     this.bridgeGlow = this.add.rectangle(510, 496, 220, 13, 0x3ceaff, .18);
     this.bridge = this.add.rectangle(510, 496, 220, 13, 0x68eaff, .08).setStrokeStyle(2, 0x70eaff, .15);
@@ -62,9 +64,13 @@ export class AwakeningScene extends Phaser.Scene {
     this.playerVisual = this.add.container(this.player.x, this.player.y);
     const flame = this.add.graphics();
     flame.fillStyle(0x43dfff, .22); flame.fillEllipse(0, 2, 54, 60);
+    flame.fillStyle(0x153a9a, .95); flame.fillTriangle(-10, -12, -7, -31, 2, -12);
+    flame.fillStyle(0x1768cf, .98); flame.fillTriangle(0, -12, 8, -34, 12, -9);
     flame.fillStyle(0x54dfff, 1); flame.fillEllipse(0, 0, 30, 38);
     flame.fillStyle(0x8df4ff, .95); flame.fillEllipse(0, 7, 18, 24);
-    flame.fillStyle(0x26316e, 1); flame.fillCircle(-6, -3, 3); flame.fillCircle(6, -3, 3);
+    flame.fillStyle(0xffffff, 1); flame.fillEllipse(-6, -3, 8, 10); flame.fillEllipse(6, -3, 8, 10);
+    flame.fillStyle(0x8d55ff, 1); flame.fillCircle(-6, -3, 3.5); flame.fillCircle(6, -3, 3.5);
+    flame.fillStyle(0x25185d, 1); flame.fillCircle(-6, -3, 1.5); flame.fillCircle(6, -3, 1.5);
     flame.fillStyle(0xd9fbff, 1); flame.fillCircle(0, 15, 4);
     this.playerVisual.add(flame);
 
@@ -75,7 +81,9 @@ export class AwakeningScene extends Phaser.Scene {
     pet.fillStyle(0x35205f, 1); pet.fillEllipse(0, 0, 30, 24);
     pet.fillTriangle(-12, -8, -10, -25, 0, -10);
     pet.fillTriangle(4, -10, 15, -25, 15, -5);
-    pet.fillStyle(0xd98cff, 1); pet.fillCircle(-6, -2, 2); pet.fillCircle(7, -2, 2);
+    pet.fillStyle(0xffffff, 1); pet.fillCircle(-6, -2, 4); pet.fillCircle(7, -2, 4);
+    pet.fillStyle(0x9b62ff, 1); pet.fillCircle(-6, -2, 2.5); pet.fillCircle(7, -2, 2.5);
+    pet.fillStyle(0x24153f, 1); pet.fillCircle(-6, -2, 1); pet.fillCircle(7, -2, 1);
     pet.lineStyle(5, 0xb66cff, 1); pet.beginPath(); pet.arc(17, 5, 14, -.8, .8, false); pet.strokePath();
     pet.lineStyle(2, 0x6cf3ff, .9); pet.strokeCircle(29, 8, 5);
     this.pushi.add(pet);
@@ -135,7 +143,19 @@ export class AwakeningScene extends Phaser.Scene {
     });
 
     this.shadowShape.clear();
+    this.lightRays.clear();
     if (shadow.polygon.length) {
+      const rayLeft = shadow.projectedLeft;
+      const rayRight = shadow.projectedRight;
+      this.lightRays.lineStyle(2, 0x72eaff, .38);
+      this.lightRays.beginPath();
+      this.lightRays.moveTo(this.lamp.x, this.lamp.y);
+      this.lightRays.lineTo(this.occluder.x, this.occluder.y);
+      this.lightRays.lineTo(rayLeft, 496);
+      this.lightRays.moveTo(this.lamp.x, this.lamp.y);
+      this.lightRays.lineTo(this.occluder.x + this.occluder.width, this.occluder.y);
+      this.lightRays.lineTo(rayRight, 496);
+      this.lightRays.strokePath();
       this.shadowShape.fillStyle(0x48dfff, shadow.active ? .34 : .10);
       this.shadowShape.fillPoints(shadow.polygon.map(p => new Phaser.Geom.Point(p.x, p.y)), true);
       this.shadowShape.lineStyle(2, 0x6feaff, shadow.active ? .7 : .18);
