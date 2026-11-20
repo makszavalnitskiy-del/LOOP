@@ -56,6 +56,7 @@ export class GameScene extends Phaser.Scene {
     this.runTimeMs = Math.max(0, Number(data.runTimeMs) || 0);
     this.finaleStarted = false;
     this.finalPhase = 1;
+    this.attemptTimeRecorded = false;
     this.paused = false;
     this.dead = false;
     this.completed = false;
@@ -967,6 +968,7 @@ export class GameScene extends Phaser.Scene {
 
   killPlayer() {
     if (this.dead || this.completed) return;
+    this.recordInterruptedAttemptTime();
     this.dead = true;
     this.resetFixedBridges();
     this.player.body.enable = false;
@@ -1114,6 +1116,15 @@ export class GameScene extends Phaser.Scene {
     this.sdk?.saveProgress?.({ attemptsByLevel });
   }
 
+  recordInterruptedAttemptTime() {
+    if (this.attemptTimeRecorded || this.completed || this.levelElapsed <= 0) return;
+    this.attemptTimeRecorded = true;
+    const seconds = Number((this.levelElapsed / 1000).toFixed(2));
+    this.runTimeMs += this.levelElapsed;
+    const currentRunTime = Math.max(0, Number(this.sdk?.progress?.currentRunTime) || 0) + seconds;
+    this.sdk?.saveProgress?.({ currentRunTime });
+  }
+
   saveProgress() {
     let previous = {};
     try { previous = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}"); } catch {}
@@ -1223,6 +1234,7 @@ export class GameScene extends Phaser.Scene {
     this.resetFixedBridges();
     if (this.paused) this.closePause();
     if (this.transitioning) return;
+    if (!this.completed) this.recordInterruptedAttemptTime();
     this.transitioning = true;
     this.cameras.main.fadeOut(260, 7, 7, 20);
     this.cameras.main.once("camerafadeoutcomplete", () => this.scene.restart({
