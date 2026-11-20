@@ -398,7 +398,7 @@ export class GameScene extends Phaser.Scene {
   handlePointerUp(pointer) {
     this.pointerOwners.delete(pointer.id);
     this.refreshMobileInput();
-    if (this.lampDragPointerId === pointer.id) this.lampDragPointerId = null;
+    if (this.lampDragPointerId === pointer.id) { this.lampDragPointerId = null; this.soundFX?.stopLampFeedback?.(); }
     for (const control of this.touchControls ?? []) {
       const stillPressed = [...this.pointerOwners.values()].includes(control.action);
       control.graphic.setAlpha(stillPressed ? 1 : 0.82);
@@ -411,6 +411,7 @@ export class GameScene extends Phaser.Scene {
     this.mobileInput.right = false;
     this.mobileInput.jump = false;
     this.lampDragPointerId = null;
+    this.soundFX?.stopLampFeedback?.();
   }
 
   handleLampDrag(pointer, gameObject, dragX, dragY) {
