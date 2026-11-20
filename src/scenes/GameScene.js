@@ -79,6 +79,7 @@ export class GameScene extends Phaser.Scene {
     this.createLevelIntro();
     this.updateAllBridges();
     this.levelStartTime = this.time.now;
+    this.soundFX?.setLevelAtmosphere?.(this.levelIndex);
     this.soundFX?.startAmbient?.();
     this.cameras.main.fadeIn(450, 7, 7, 20);
     this.events.once("shutdown", this.handleShutdown, this);
@@ -237,7 +238,7 @@ export class GameScene extends Phaser.Scene {
     this.bridges.push({
       id: obstacleData?.bridgeId ?? "bridge-" + (this.bridges.length + 1),
       obstacleId: obstacleData?.id ?? null,
-      gap, bridge, glow, active: false, shadow: null
+      gap, bridge, glow, active: false, shadow: null, material: 0
     });
   }
 
@@ -259,9 +260,9 @@ export class GameScene extends Phaser.Scene {
     this.lamp.setInteractive(new Phaser.Geom.Circle(0, 0, 29), Phaser.Geom.Circle.Contains);
     this.input.setDraggable(this.lamp);
     this.lampDragPointerId = null;
-    this.lamp.on("pointerdown", pointer => { this.lampDragPointerId = pointer.id; });
+    this.lamp.on("pointerdown", pointer => { this.lampDragPointerId = pointer.id; this.soundFX?.beginLampFeedback?.(); });
     this.lamp.on("pointerup", pointer => { if (this.lampDragPointerId === pointer.id) this.lampDragPointerId = null; });
-    this.lamp.on("pointerupoutside", pointer => { if (this.lampDragPointerId === pointer.id) this.lampDragPointerId = null; });
+    this.lamp.on("pointerupoutside", pointer => { if (this.lampDragPointerId === pointer.id) { this.lampDragPointerId = null; this.soundFX?.stopLampFeedback?.(); } });
     this.rayGraphics = this.add.graphics().setDepth(10);
     this.shadowGraphics = this.add.graphics().setDepth(4);
     this.lightDustGraphics = this.add.graphics().setDepth(10);
@@ -414,6 +415,7 @@ export class GameScene extends Phaser.Scene {
 
   handleLampDrag(pointer, gameObject, dragX, dragY) {
     if (gameObject !== this.lamp || this.transitioning || this.dead || this.completed) return;
+    this.soundFX?.beginLampFeedback?.();
     if (this.lampDragPointerId !== null && pointer.id !== this.lampDragPointerId) return;
     this.lampDragPointerId = pointer.id;
     this.lamp.setPosition(
@@ -422,10 +424,12 @@ export class GameScene extends Phaser.Scene {
     );
     this.lampGlow.setPosition(this.lamp.x, this.lamp.y);
     this.updateAllBridges();
+    const coverage = this.bridges.reduce((maximum, item) => Math.max(maximum, Number(item.shadow?.coverage) || 0), 0);
+    this.soundFX?.updateLampFeedback?.(coverage);
   }
 
   handleLampDragEnd(pointer, gameObject) {
-    if (gameObject === this.lamp && this.lampDragPointerId === pointer.id) this.lampDragPointerId = null;
+    if (gameObject === this.lamp && this.lampDragPointerId === pointer.id) { this.lampDragPointerId = null; this.soundFX?.stopLampFeedback?.(); }
   }
 
   createKeyboardControls() {
@@ -530,7 +534,10 @@ export class GameScene extends Phaser.Scene {
       const coverage = Phaser.Math.Clamp(Number(shadow.coverage) || 0, 0, 1);
       const material = shadow.active ? 1 : Phaser.Math.Clamp(coverage * 0.88, 0, 0.88);
       item.material = Phaser.Math.Linear(item.material ?? 0, material, 0.24);
+      const wasActive = item.active;
       item.active = shadow.active;
+      if (shadow.active && !wasActive) this.soundFX?.playBridge?.();
+      else if (!shadow.active && wasActive) this.soundFX?.playBridgeFade?.();
       item.bridge.body.enable = shadow.active;
       if (shadow.width > 0 && shadow.polygon.length) {
         const centerX = shadow.x + shadow.width / 2;
@@ -603,10 +610,15 @@ export class GameScene extends Phaser.Scene {
     const grounded = body.blocked.down || body.touching.down;
     const vx = body.velocity.x;
     const moving = grounded && Math.abs(vx) > 18;
+    if (moving && time - (this.lastFootstepTime ?? 0) > 250) {
+      const currentBridge = this.bridges.find(item => item.active && this.player.x >= item.gap.x && this.player.x <= item.gap.x + item.gap.width);
+      this.soundFX?.playRunStep?.(Boolean(currentBridge));
+      this.lastFootstepTime = time;
+    }
     if (grounded && !this.wasGrounded) {
       this.landSquash = 1;
       this.emitLandingDust();
-      this.soundFX?.playLand?.();
+      this.soundFX?.playLand?.(Math.abs(body.velocity.y));
     }
     this.wasGrounded = grounded;
     this.landSquash = Phaser.Math.Linear(this.landSquash, 0, 0.2);
@@ -768,7 +780,8 @@ export class GameScene extends Phaser.Scene {
   showCompletionPanel() {
     const finalLevel = this.levelIndex >= LEVELS.length - 1;
     const panel = this.add.container(this.scale.width / 2, this.scale.height / 2).setScrollFactor(0).setDepth(100);
-    const backdrop = this.add.rectangle(0, 0, 470, 270, 0x090d28, 0.97).setStrokeStyle(2, 0x8b7aff, 1);
+    const panelWidth = Math.min(470, this.scale.width - 36);
+    const backdrop = this.add.rectangle(0, 0, panelWidth, 286, 0x090d28, 0.985).setStrokeStyle(2, 0x8b7aff, 1);
     panel.add(backdrop);
     panel.add(this.add.text(0, -83, finalLevel ? "ЦИКЛ РАЗОМКНУТ" : "УРОВЕНЬ ПРОЙДЕН", {
       fontFamily: "Nunito, sans-serif", fontSize: "25px", fontStyle: "900", color: "#dffaff"
@@ -782,7 +795,7 @@ export class GameScene extends Phaser.Scene {
       fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "900", color: "#78eaff"
     }).setOrigin(0.5));
     const mainLabel = finalLevel ? "ВЕРНУТЬСЯ В МЕНЮ" : "СЛЕДУЮЩИЙ УРОВЕНЬ";
-    this.createPanelButton(panel, 0, 68, 250, 42, mainLabel, () => {
+    this.createPanelButton(panel, 0, 65, Math.min(250, panelWidth - 48), 42, mainLabel, () => {
       if (finalLevel) this.returnToMenu();
       else this.startLevel(this.levelIndex + 1);
     });
@@ -839,6 +852,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   handleShutdown() {
+    this.soundFX?.stopLampFeedback?.();
     this.soundFX?.stopAmbient?.();
     this.landingDust?.splice(0);
     this.lightDust?.splice(0);
