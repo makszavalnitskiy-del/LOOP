@@ -54,6 +54,8 @@ export class GameScene extends Phaser.Scene {
     this.jumpBufferUntil = 0;
     this.coyoteUntil = 0;
     this.pointerOwners.clear();
+    this.enteredBridges = new Set();
+    this.crossedBridges = new Set();
     this.mobileInput = { left: false, right: false, jump: false };
   }
 
@@ -215,8 +217,10 @@ export class GameScene extends Phaser.Scene {
       const obstacle = { data, art, core, halo, physicsBody, x: data.x, y: data.y, width: data.width, height: data.height, direction: data.patrol?.direction ?? 1 };
       this.obstacles.push(obstacle);
       if (data.type === "crystal") {
-        const gap = this.gaps.find(item => item.id === data.bridgeId?.replace("bridge-", "gap-")) ??
-          this.gaps[crystals.indexOf(data)] ?? this.gaps[this.bridges.length];
+        const bridgeNumber = Number(String(data.bridgeId ?? "").match(/(\\d+)$/)?.[1]);
+        const gap = Number.isInteger(bridgeNumber) && bridgeNumber > 0
+          ? this.gaps[bridgeNumber - 1]
+          : this.gaps[crystals.indexOf(data)];
         if (gap) this.createBridge(data, gap);
       }
     }
@@ -486,8 +490,9 @@ export class GameScene extends Phaser.Scene {
   updateSensors(delta) {
     for (const sensor of this.sensorObjects ?? []) {
       if (sensor.activated) continue;
-      const polygon = this.bridges.map(item => item.shadow?.polygon ?? []).find(points => points.length >= 3 && Phaser.Geom.Polygon.Contains(new Phaser.Geom.Polygon(points.map(point => new Phaser.Geom.Point(point.x, point.y))), sensor.visual.x, sensor.visual.y));
-      sensor.elapsed = polygon ? sensor.elapsed + delta : 0;
+      const sensorRect = { x: sensor.data.x, y: sensor.data.y, width: sensor.data.width, height: sensor.data.height };
+      const covered = this.bridges.some(item => ShadowProjection.intersectsRect(item.shadow?.polygon ?? [], sensorRect));
+      sensor.elapsed = covered ? sensor.elapsed + delta : 0;
       const progress = Phaser.Math.Clamp(sensor.elapsed / sensor.data.requiredHold, 0, 1);
       sensor.visual.setFillStyle(sensor.data.color ?? 0x9d83ff, 0.18 + progress * 0.55);
       sensor.ring.setScale(1 + progress * 0.3);
@@ -670,6 +675,7 @@ export class GameScene extends Phaser.Scene {
     this.updateAllBridges();
     this.updateSensors(safeDelta);
     this.updatePlayerMovement(time);
+    this.updateBridgeProgress();
     this.updateCharacterVisuals(time);
     this.updateLightAtmosphere(time);
     this.updateLandingDust(safeDelta);
@@ -700,6 +706,21 @@ export class GameScene extends Phaser.Scene {
       this.coyoteUntil = 0;
       this.wasGrounded = false;
       this.soundFX?.playJump?.();
+    }
+  }
+
+  updateBridgeProgress() {
+    if (!this.player?.body || !this.bridges?.length) return;
+    const playerX = this.player.x;
+    for (const item of this.bridges) {
+      const gapStart = item.gap.x;
+      const gapEnd = item.gap.x + item.gap.width;
+      if (item.active && playerX + PLAYER_WIDTH / 2 >= gapStart && playerX - PLAYER_WIDTH / 2 <= gapEnd) {
+        this.enteredBridges.add(item.id);
+      }
+      if (this.enteredBridges.has(item.id) && playerX >= gapEnd + PLAYER_WIDTH / 2 && this.player.y < this.worldGroundY + 12) {
+        this.crossedBridges.add(item.id);
+      }
     }
   }
 
@@ -847,9 +868,9 @@ export class GameScene extends Phaser.Scene {
     if (this.completed || this.transitioning) return;
     const bounds = this.player.getBounds();
     if (Phaser.Geom.Intersects.RectangleToRectangle(bounds, this.portalBounds)) {
-      const allBridgesActive = this.bridges.length > 0 && this.bridges.every(item => item.active);
+      const allBridgesCrossed = this.bridges.length > 0 && this.bridges.every(item => this.crossedBridges.has(item.id));
       const gatesOpen = this.obstacles.filter(item => item.data.type === "barrier" && item.data.sensorId).every(item => item.open);
-      if (allBridgesActive && gatesOpen) this.completeLevel();
+      if (allBridgesCrossed && gatesOpen) this.completeLevel();
     }
   }
 
