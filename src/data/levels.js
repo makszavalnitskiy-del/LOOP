@@ -282,8 +282,9 @@ function attachLevelMetadataAndHints(level) {
 
   const steps = [];
   for (const sensor of level.sensors ?? []) {
+    const sensorCrystals = sensor.crystalId ? crystals.filter(item => item.id === sensor.crystalId) : crystals;
     const sensorHint = ShadowProjection.findSensorPosition({
-      bounds: level.lampBounds, obstacles: crystals, groundY: level.world.groundY,
+      bounds: level.lampBounds, obstacles: sensorCrystals, groundY: level.world.groundY,
       sensor, worldWidth: level.world.width, step: 2
     });
     if (!sensorHint) throw new Error(`Level ${level.id}: no lamp position can charge sensor ${sensor.id}`);
