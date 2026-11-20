@@ -312,6 +312,58 @@ function attachLevelMetadataAndHints(level) {
   }
 }
 
+// The final chapter has a bespoke three-act finale rather than the generated layout.
+const finalLevel = LEVELS[19];
+finalLevel.title = "Последний цикл";
+finalLevel.subtitle = "Память. Синхронизация. Сердце.";
+finalLevel.description = "Разбуди память, синхронизируй два моста и удержи последний луч во время прыжка.";
+finalLevel.lore = "Арзон — искра первого рассвета. Пуши — память света, которую Цикл не смог стереть.";
+finalLevel.world = { width: 2050, height: 600, background: 0x090b25, groundY: 496 };
+finalLevel.platforms = [
+  { id: "start-ground", x: 0, y: 496, width: 400, height: 104 },
+  { id: "middle-ground", x: 680, y: 496, width: 290, height: 104 },
+  { id: "end-ground", x: 1320, y: 496, width: 730, height: 104 }
+];
+finalLevel.gaps = [
+  { id: "memory-gap", bridgeId: "bridge-1", x: 400, y: 496, width: 280, height: 104 },
+  { id: "heart-gap", bridgeId: "bridge-2", x: 970, y: 496, width: 350, height: 104 }
+];
+finalLevel.obstacles = [
+  { id: "memory-crystal", type: "crystal", x: 310, y: 330, width: 130, height: 70, color: 0x73eaff, movable: true,
+    patrol: { axis: "x", min: 300, max: 350, speed: 42, start: 310, direction: 1 }, bridgeId: "bridge-1" },
+  { id: "heart-crystal", type: "crystal", x: 875, y: 320, width: 160, height: 80, color: 0xd29aff, movable: false,
+    patrol: null, bridgeId: "bridge-2" },
+  { id: "memory-barrier", type: "barrier", x: 535, y: 300, width: 28, height: 196, color: 0x9a6cff,
+    movable: false, patrol: null, sensorId: "memory-sensor" },
+  { id: "heart-barrier", type: "barrier", x: 1535, y: 294, width: 30, height: 202, color: 0xffd28a,
+    movable: false, patrol: null, sensorId: "heart-sensor" }
+];
+finalLevel.sensors = [
+  { id: "memory-sensor", phase: 1, type: "shadow-sensor", x: 370, y: 390, width: 72, height: 48,
+    requiredHold: 1250, targetObstacleId: "memory-barrier", color: 0x9d83ff },
+  { id: "heart-sensor", phase: 3, type: "shadow-sensor", x: 1210, y: 370, width: 82, height: 58,
+    requiredHold: 1150, targetObstacleId: "heart-barrier", color: 0xffd28a,
+    holdToMaintain: true, requiresJump: true, jumpXMin: 1510, jumpXMax: 1730 }
+];
+finalLevel.lampBounds = { minX: 65, maxX: 1150, minY: 82, maxY: 330 };
+finalLevel.lampStart = { x: 145, y: 175 };
+finalLevel.playerStart = { x: 90, y: 450 };
+finalLevel.portal = { x: 1900, y: 424, width: 64, height: 76 };
+finalLevel.texts = {
+  intro: "ПОСЛЕДНИЙ ЦИКЛ",
+  objective: "I. ПРОБУДИ ПАМЯТЬ  •  II. СИНХРОНИЗИРУЙ МОСТЫ  •  III. ЗАЖГИ СЕРДЦЕ",
+  phase1: "АКТ I  /  ПРОБУЖДЕНИЕ ПАМЯТИ",
+  phase2: "АКТ II  /  СИНХРОНИЗАЦИЯ",
+  phase3: "АКТ III  /  СЕРДЦЕ ЦИКЛА",
+  completion: "СВЕТ БОЛЬШЕ НЕ ПОВТОРЯЕТСЯ"
+};
+finalLevel.finalSequence = { memorySensorId: "memory-sensor", heartSensorId: "heart-sensor" };
+finalLevel.mechanics = {
+  lampDraggable: true, lampLimited: true, requireFullBridge: true,
+  movingObstacles: true, multipleCrystals: true, shadowSensors: true,
+  finalChallenge: true, threeActFinale: true, unstableLamp: true
+};
+
 for (const level of LEVELS) attachLevelMetadataAndHints(level);
 
 export function getLevelById(levelId) {
