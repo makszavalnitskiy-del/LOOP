@@ -2,6 +2,8 @@ import { BootScene } from "./scenes/BootScene.js";
 import { MenuScene } from "./scenes/MenuScene.js";
 import { AwakeningScene } from "./scenes/AwakeningScene.js";
 import { GameScene } from "./scenes/GameScene.js";
+import { YandexSDK } from "./platform/YandexSDK.js";
+import { SoundFX } from "./audio/SoundFX.js";
 
 const GAME_WIDTH = 960;
 const GAME_HEIGHT = 600;
@@ -10,23 +12,32 @@ const loadingProgress = document.getElementById("loading-progress");
 const loadingLabel = document.getElementById("loading-label");
 
 function updateLoadingProgress(value) {
-  if (loadingProgress) loadingProgress.style.width = `${Math.max(0, Math.min(1, value)) * 100}%`;
+  if (loadingProgress) {
+    loadingProgress.style.width = `${Math.max(0, Math.min(1, value)) * 100}%`;
+  }
 }
+
+function setLoadingLabel(value) {
+  if (loadingLabel) loadingLabel.textContent = value;
+}
+
 function hideLoadingScreen() {
   if (loadingScreen) loadingScreen.classList.add("is-hidden");
 }
+
 function waitForFonts() {
   if (!document.fonts?.ready) return Promise.resolve();
-  return Promise.race([
-    document.fonts.ready.catch(() => undefined),
-    new Promise(resolve => window.setTimeout(resolve, 3500))
-  ]);
+  return document.fonts.ready.catch(error => {
+    console.warn("[LOOP] Font loading failed; using fallback fonts.", error);
+  });
 }
-function createGame() {
+
+function createGame(soundFX) {
   if (typeof Phaser === "undefined") {
-    if (loadingLabel) loadingLabel.textContent = "ОШИБКА ЗАГРУЗКИ PHASER";
+    setLoadingLabel("ОШИБКА ЗАГРУЗКИ PHASER");
     throw new Error("Phaser 3.80.1 не был загружен.");
   }
+
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: "game",
@@ -40,35 +51,65 @@ function createGame() {
       height: GAME_HEIGHT,
       expandParent: false
     },
-    render: { antialias: true, pixelArt: false, roundPixels: false, powerPreference: "high-performance", clearBeforeRender: true },
+    render: {
+      antialias: true,
+      pixelArt: false,
+      roundPixels: false,
+      powerPreference: "high-performance",
+      clearBeforeRender: true
+    },
     input: { activePointers: 3, smoothFactor: 0 },
-    physics: { default: "arcade", arcade: { debug: false, gravity: { x: 0, y: 0 }, fps: 60, fixedStep: true } },
+    physics: {
+      default: "arcade",
+      arcade: { debug: false, gravity: { x: 0, y: 0 }, fps: 60, fixedStep: true }
+    },
     fps: { target: 60, forceSetTimeOut: false, smoothStep: true },
     audio: { disableWebAudio: true },
     scene: [BootScene, MenuScene, AwakeningScene, GameScene]
   });
+
+  // Phaser's registry is shared by every scene and survives scene transitions.
+  game.registry.set("YandexSDK", YandexSDK);
+  game.registry.set("SoundFX", soundFX);
+  game.registry.set("soundFX", soundFX);
+
   game.events.once("ready", () => {
     updateLoadingProgress(1);
-    if (loadingLabel) loadingLabel.textContent = "МИР ГОТОВ";
-    window.setTimeout(hideLoadingScreen, 180);
+    setLoadingLabel("МИР ГОТОВ");
   });
+
   window.addEventListener("error", event => {
     if (event.error) console.error("[LOOP] Runtime error:", event.error);
   });
-  window.addEventListener("unhandledrejection", event => console.error("[LOOP] Unhandled promise rejection:", event.reason));
+  window.addEventListener("unhandledrejection", event => {
+    console.error("[LOOP] Unhandled promise rejection:", event.reason);
+  });
+
   return game;
 }
+
 async function boot() {
   try {
-    updateLoadingProgress(.15);
-    if (loadingLabel) loadingLabel.textContent = "ЗАГРУЗКА ШРИФТОВ...";
-    await waitForFonts();
-    updateLoadingProgress(.55);
-    if (loadingLabel) loadingLabel.textContent = "ЗАПУСК ИГРОВОГО ДВИЖКА...";
-    createGame();
+    updateLoadingProgress(0.08);
+    setLoadingLabel("ЗАГРУЗКА ШРИФТОВ И ИГРОВОГО SDK...");
+
+    // Both prerequisites must settle before Phaser starts.
+    const [, sdk] = await Promise.all([
+      waitForFonts(),
+      YandexSDK.init()
+    ]);
+
+    updateLoadingProgress(0.55);
+    setLoadingLabel("ЗАПУСК ИГРОВОГО ДВИЖКА...");
+
+    const soundFX = new SoundFX();
+    const game = createGame(soundFX);
+    game.registry.set("YandexSDK", sdk);
+    updateLoadingProgress(0.72);
   } catch (error) {
     console.error("[LOOP] Failed to initialize:", error);
-    if (loadingLabel) loadingLabel.textContent = "НЕ УДАЛОСЬ ЗАПУСТИТЬ ИГРУ";
+    setLoadingLabel("НЕ УДАЛОСЬ ЗАПУСТИТЬ ИГРУ");
   }
 }
+
 boot();
