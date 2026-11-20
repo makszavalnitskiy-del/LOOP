@@ -24,10 +24,12 @@ export class AwakeningScene extends Phaser.Scene {
     });
 
     this.platforms = this.physics.add.staticGroup();
-    this.platforms.create(200, 548, null).setVisible(false).setSize(400, 104).refreshBody();
-    this.platforms.create(790, 548, null).setVisible(false).setSize(340, 104).refreshBody();
-    this.add.rectangle(200, 548, 400, 104, 0x242653).setStrokeStyle(2, 0x5966b4, .8);
-    this.add.rectangle(790, 548, 340, 104, 0x242653).setStrokeStyle(2, 0x5966b4, .8);
+    const leftFloor = this.add.rectangle(200, 548, 400, 104, 0x242653).setStrokeStyle(2, 0x5966b4, .8);
+    const rightFloor = this.add.rectangle(790, 548, 340, 104, 0x242653).setStrokeStyle(2, 0x5966b4, .8);
+    this.physics.add.existing(leftFloor, true);
+    this.physics.add.existing(rightFloor, true);
+    this.platforms.add(leftFloor);
+    this.platforms.add(rightFloor);
 
     // Shadow bridge, activated by positioning the lamp in its marked zone.
     this.bridgeGlow = this.add.rectangle(510, 496, 220, 13, 0x3ceaff, .18);
@@ -36,7 +38,10 @@ export class AwakeningScene extends Phaser.Scene {
     this.bridge.body.enable = false;
     this.bridgeActive = false;
 
-    this.player = this.physics.add.sprite(115, 475, null);
+    const bodyTexture = this.make.graphics({ x: 0, y: 0, add: false });
+    bodyTexture.fillStyle(0xffffff, 1); bodyTexture.fillRoundedRect(2, 2, 28, 38, 10);
+    bodyTexture.generateTexture("arz-body", 32, 42); bodyTexture.destroy();
+    this.player = this.physics.add.sprite(115, 475, "arz-body");
     this.player.setSize(28, 38);
     this.player.setCollideWorldBounds(true);
     this.player.setGravityY(900);
