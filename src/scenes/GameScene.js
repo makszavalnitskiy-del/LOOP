@@ -537,7 +537,7 @@ export class GameScene extends Phaser.Scene {
     this.createPauseButton(panel, 0, -62, "ПЕРЕЗАПУСТИТЬ УРОВЕНЬ", () => this.restartLevel(), width - 64);
     this.createPauseButton(panel, 0, -12, "ГРОМКОСТЬ SFX / МУЗЫКИ  −", () => this.soundFX?.setMasterVolume?.(Math.max(0.03, (this.soundFX.getMasterVolume?.() ?? 0.24) - 0.03)), width - 64);
     this.createPauseButton(panel, 0, 34, "ГРОМКОСТЬ SFX / МУЗЫКИ  +", () => this.soundFX?.setMasterVolume?.(Math.min(0.4, (this.soundFX.getMasterVolume?.() ?? 0.24) + 0.03)), width - 64);
-    this.createPauseButton(panel, 0, 82, "ПОЛНЫЙ ЭКРАН", () => { if (this.scale.isFullscreen) this.scale.stopFullscreen(); else this.scale.startFullscreen(); }, width - 64);
+    this.createPauseButton(panel, 0, 82, "ПОЛНЫЙ ЭКРАН", () => { if (this.scale.isFullscreen) this.scale.stopFullscreen(); this.scale.toggleFullscreen(); }, width - 64);
     this.createPauseButton(panel, 0, 132, "В ГЛАВНОЕ МЕНЮ", () => this.returnToMenu(), width - 64);
   }
 
@@ -931,6 +931,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   restartLevel() {
+    if (this.paused) this.closePause();
     if (this.transitioning) return;
     this.transitioning = true;
     this.cameras.main.fadeOut(260, 7, 7, 20);
@@ -945,6 +946,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   returnToMenu() {
+    if (this.paused) this.closePause();
     if (this.transitioning) return;
     this.transitioning = true;
     this.cameras.main.fadeOut(350, 7, 7, 20);
@@ -960,6 +962,8 @@ export class GameScene extends Phaser.Scene {
     this.cleanupHandlers.length = 0;
     if (this.input.keyboard && this.keyboardJumpHandler) this.input.keyboard.off("keydown", this.keyboardJumpHandler);
     if (this.input.keyboard && this.keyboardPauseHandler) this.input.keyboard.off("keydown", this.keyboardPauseHandler);
+    this.pauseOverlay?.destroy(true);
+    this.pauseOverlay = null;
     this.pointerOwners.clear();
     this.platformColliders?.forEach(collider => collider?.destroy());
     this.bridges?.forEach(item => item.collider?.destroy());
