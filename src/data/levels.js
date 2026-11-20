@@ -8,7 +8,7 @@ export const LEVELS = [
       { id: "start-ground", x: 0, y: 496, width: 400, height: 104 },
       { id: "end-ground", x: 620, y: 496, width: 980, height: 104 }
     ],
-    gaps: [{ id: "first-gap", x: 400, y: 496, width: 220, height: 104 }],
+    gaps: [{ id: "first-gap", bridgeId: "bridge-1", x: 400, y: 496, width: 220, height: 104 }],
     obstacles: [{
       id: "crystal-1", type: "crystal", x: 280, y: 360, width: 120, height: 60,
       color: 0x79eaff, movable: false, patrol: null, bridgeId: "bridge-1"
@@ -34,8 +34,8 @@ export const LEVELS = [
       { id: "end-ground", x: 980, y: 496, width: 920, height: 104 }
     ],
     gaps: [
-      { id: "first-gap", x: 340, y: 496, width: 210, height: 104 },
-      { id: "second-gap", x: 760, y: 496, width: 220, height: 104 }
+      { id: "first-gap", bridgeId: "bridge-1", x: 340, y: 496, width: 210, height: 104 },
+      { id: "second-gap", bridgeId: "bridge-2", x: 760, y: 496, width: 220, height: 104 }
     ],
     obstacles: [
       { id: "crystal-1", type: "crystal", x: 230, y: 350, width: 110, height: 66, color: 0x70eaff, movable: false, patrol: null, bridgeId: "bridge-1" },
@@ -64,8 +64,8 @@ export const LEVELS = [
       { id: "end-ground", x: 1120, y: 496, width: 1080, height: 104 }
     ],
     gaps: [
-      { id: "first-gap", x: 390, y: 496, width: 260, height: 104 },
-      { id: "second-gap", x: 840, y: 496, width: 280, height: 104 }
+      { id: "first-gap", bridgeId: "bridge-1", x: 390, y: 496, width: 260, height: 104 },
+      { id: "second-gap", bridgeId: "bridge-2", x: 840, y: 496, width: 280, height: 104 }
     ],
     obstacles: [
       { id: "crystal-1", type: "crystal", x: 280, y: 340, width: 100, height: 68, color: 0x70eaff, movable: true, patrol: { axis: "x", min: 230, max: 360, speed: 72, start: 280, direction: 1 }, bridgeId: "bridge-1" },
@@ -93,7 +93,7 @@ export const LEVELS = [
       { id: "start-ground", x: 0, y: 496, width: 420, height: 104 },
       { id: "end-ground", x: 700, y: 496, width: 1200, height: 104 }
     ],
-    gaps: [{ id: "resonance-gap", x: 420, y: 496, width: 280, height: 104 }],
+    gaps: [{ id: "resonance-gap", bridgeId: "bridge-1", x: 420, y: 496, width: 280, height: 104 }],
     obstacles: [
       { id: "bridge-crystal", type: "crystal", x: 310, y: 345, width: 150, height: 70, color: 0x77eaff, movable: false, patrol: null, bridgeId: "bridge-1" },
       { id: "laser-barrier", type: "barrier", x: 1050, y: 390, width: 24, height: 212, color: 0xff4fd8, movable: false, patrol: null, sensorId: "sensor-lock" }
@@ -116,8 +116,8 @@ export const LEVELS = [
       { id: "end-ground", x: 1080, y: 496, width: 1220, height: 104 }
     ],
     gaps: [
-      { id: "first-gap", x: 350, y: 496, width: 240, height: 104 },
-      { id: "second-gap", x: 780, y: 496, width: 300, height: 104 }
+      { id: "first-gap", bridgeId: "bridge-1", x: 350, y: 496, width: 240, height: 104 },
+      { id: "second-gap", bridgeId: "bridge-2", x: 780, y: 496, width: 300, height: 104 }
     ],
     obstacles: [
       { id: "crystal-static", type: "crystal", x: 250, y: 335, width: 120, height: 70, color: 0x70eaff, movable: false, patrol: null, bridgeId: "bridge-1" },
@@ -141,8 +141,8 @@ export const LEVELS = [
       { id: "end-ground", x: 1260, y: 496, width: 1340, height: 104 }
     ],
     gaps: [
-      { id: "first-gap", x: 390, y: 496, width: 370, height: 104 },
-      { id: "second-gap", x: 930, y: 496, width: 330, height: 104 }
+      { id: "first-gap", bridgeId: "bridge-1", x: 390, y: 496, width: 370, height: 104 },
+      { id: "second-gap", bridgeId: "bridge-2", x: 930, y: 496, width: 330, height: 104 }
     ],
     obstacles: [
       { id: "crystal-static", type: "crystal", x: 320, y: 330, width: 220, height: 74, color: 0x70eaff, movable: false, patrol: null, bridgeId: "bridge-1" },
