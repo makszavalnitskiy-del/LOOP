@@ -72,10 +72,25 @@ export class AwakeningScene extends Phaser.Scene {
 
     // Pushi has an independent aura and follows Arzon with a soft, delayed motion.
     this.pushiAura = this.add.circle(65, 490, 31, 0x9b63ff, .10);
+    this.pushiShadow = this.add.ellipse(65, 535, 48, 10, 0x080817, .45);
     this.pushi = this.add.image(65, 490, "pushi").setDisplaySize(92, 92);
     this.pushiBaseScaleX = this.pushi.scaleX;
     this.pushiBaseScaleY = this.pushi.scaleY;
-    this.pushiShadow = this.add.ellipse(65, 535, 48, 10, 0x080817, .45);
+
+    // A brief eyelid stroke gives Arzon a readable blink without replacing the approved artwork.
+    this.blinkArt = this.add.graphics();
+    this.blinkArt.lineStyle(2, 0xd8ffff, 1);
+    this.blinkArt.beginPath();
+    this.blinkArt.moveTo(-10.5, -8);
+    this.blinkArt.quadraticBezierTo(-6.5, -4.5, -2.5, -8);
+    this.blinkArt.moveTo(2.5, -8);
+    this.blinkArt.quadraticBezierTo(6.5, -4.5, 10.5, -8);
+    this.blinkArt.strokePath();
+    this.blinkArt.setAlpha(0);
+    this.playerVisual.add(this.blinkArt);
+    this.time.addEvent({ delay: 3100, loop: true, callback: () => {
+      this.tweens.add({ targets: this.blinkArt, alpha: { from: 0, to: .9 }, duration: 65, yoyo: true, hold: 65 });
+    }});
     this.wasGrounded = false;
     this.landSquash = 0;
 
