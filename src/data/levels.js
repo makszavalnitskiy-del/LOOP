@@ -1,5 +1,12 @@
 import { ShadowProjection } from "../mechanics/shadows/ShadowProjection.js";
 
+export const CHAPTERS = [
+  { id: 1, key: "awakening", title: "Пробуждение света", firstLevel: 1, lastLevel: 5 },
+  { id: 2, key: "echoes", title: "Эхо прошлого", firstLevel: 6, lastLevel: 10 },
+  { id: 3, key: "fracture", title: "Разлом цикла", firstLevel: 11, lastLevel: 15 },
+  { id: 4, key: "final-cycle", title: "Последний цикл", firstLevel: 16, lastLevel: 20 }
+];
+
 export const LEVELS = [
   {
     id: 1, key: "awakening", title: "Пробуждение", subtitle: "Первый источник света",
@@ -253,6 +260,12 @@ LEVELS.push(
 function attachLevelMetadataAndHints(level) {
   level.chapter ??= Math.ceil(level.id / 5);
   level.parTimeSec ??= 45 + level.id * 4;
+  const chapter = CHAPTERS[level.chapter - 1];
+  if (!chapter || level.id < chapter.firstLevel || level.id > chapter.lastLevel) {
+    throw new Error(`Level ${level.id}: invalid chapter assignment`);
+  }
+  level.chapterKey = chapter.key;
+  level.chapterTitle = chapter.title;
   level.localizationKeys = {
     title: `level.${level.id}.title`,
     subtitle: `level.${level.id}.subtitle`,
