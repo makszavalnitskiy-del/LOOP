@@ -75,10 +75,16 @@ export class MenuScene extends Phaser.Scene {
   }
   createCharacters(w) {
     const x = w / 2;
+    const arzonAura = this.add.circle(x - 100, 289, 76, 0x55eaff, 0.075);
+    const pushiAura = this.add.circle(x + 100, 294, 72, 0x9b63ff, 0.075);
+    const arzonShadow = this.add.ellipse(x - 100, 344, 72, 12, 0x050611, 0.48);
+    const pushiShadow = this.add.ellipse(x + 100, 344, 72, 12, 0x050611, 0.48);
     const arzon = this.add.image(x - 100, 285, "arzon").setDisplaySize(112, 112);
     const pushi = this.add.image(x + 100, 291, "pushi").setDisplaySize(108, 108);
-    this.tweens.add({ targets: arzon, y: 275, duration: 1150, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: [arzonAura, pushiAura], alpha: { from: 0.045, to: 0.13 }, scale: { from: 0.92, to: 1.1 }, duration: 1650, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: arzon, y: 275, scaleX: { from: 0.99, to: 1.025 }, scaleY: { from: 1.015, to: 0.99 }, duration: 1150, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.tweens.add({ targets: pushi, y: 299, angle: { from: -3, to: 3 }, duration: 1320, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: [arzonShadow, pushiShadow], scaleX: { from: 0.88, to: 1.08 }, alpha: { from: 0.35, to: 0.52 }, duration: 1150, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.add.text(x - 100, 357, "АРЗОН", { fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "bold", color: "#82eaff" }).setOrigin(.5);
     this.add.text(x + 100, 357, "ПУШИ", { fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "bold", color: "#c29aff" }).setOrigin(.5);
   }
