@@ -26,3 +26,6 @@
 - `src/mechanics` — игровые механики
 - `assets` — изображения, звук и музыка
 - `levels` — данные уровней
+
+## Publishing
+This project is deployed to GitHub Pages using the repository's GitHub Actions workflow.
