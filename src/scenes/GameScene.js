@@ -537,7 +537,7 @@ export class GameScene extends Phaser.Scene {
     this.createPauseButton(panel, 0, -62, "ПЕРЕЗАПУСТИТЬ УРОВЕНЬ", () => this.restartLevel(), width - 64);
     this.createPauseButton(panel, 0, -12, "ГРОМКОСТЬ SFX / МУЗЫКИ  −", () => this.soundFX?.setMasterVolume?.(Math.max(0.03, (this.soundFX.getMasterVolume?.() ?? 0.24) - 0.03)), width - 64);
     this.createPauseButton(panel, 0, 34, "ГРОМКОСТЬ SFX / МУЗЫКИ  +", () => this.soundFX?.setMasterVolume?.(Math.min(0.4, (this.soundFX.getMasterVolume?.() ?? 0.24) + 0.03)), width - 64);
-    this.createPauseButton(panel, 0, 82, "ПОЛНЫЙ ЭКРАН", () => { if (this.scale.isFullscreen) this.scale.stopFullscreen(); this.scale.toggleFullscreen(); }, width - 64);
+    this.createPauseButton(panel, 0, 82, "ПОЛНЫЙ ЭКРАН", () => this.scale.toggleFullscreen(), width - 64);
     this.createPauseButton(panel, 0, 132, "В ГЛАВНОЕ МЕНЮ", () => this.returnToMenu(), width - 64);
   }
 
