@@ -15,6 +15,7 @@ export class MenuScene extends Phaser.Scene {
     const height = this.scale.height;
     this.isTransitioning = false;
     this.soundFX = this.registry.get("soundFX") ?? null;
+    this.soundFX?.setLevelAtmosphere?.(0);
     this.createBackground(width, height);
     this.createStarField(width, height);
     this.createLogo(width);
