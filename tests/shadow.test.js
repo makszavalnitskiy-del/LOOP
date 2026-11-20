@@ -197,6 +197,47 @@ test("moving obstacle patrols remain inside their declared ranges", () => {
   }
 });
 
+test("level 20 is a bespoke three-act finale with two bridges and two gated sensors", () => {
+  const finale = getLevelById(20);
+  assert.equal(finale.key, "final-cycle");
+  assert.equal(finale.finalSequence.memorySensorId, "memory-sensor");
+  assert.equal(finale.finalSequence.heartSensorId, "heart-sensor");
+  assert.equal(finale.gaps.length, 2);
+  assert.equal(finale.sensors.length, 2);
+  assert.ok(finale.mechanics.threeActFinale);
+  assert.ok(finale.mechanics.unstableLamp);
+  const memoryCrystal = finale.obstacles.find(item => item.id === "memory-crystal");
+  const heartCrystal = finale.obstacles.find(item => item.id === "heart-crystal");
+  assert.ok(memoryCrystal.patrol, "the memory crystal must patrol during act I");
+  assert.equal(heartCrystal.patrol, null, "the second bridge crystal stays static");
+  assert.equal(finale.sensors.find(item => item.id === "memory-sensor").crystalId, memoryCrystal.id);
+  const heart = finale.sensors.find(item => item.id === "heart-sensor");
+  assert.equal(heart.crystalId, heartCrystal.id);
+  assert.equal(heart.holdToMaintain, true);
+  assert.equal(heart.requiresJump, true);
+  assert.ok(heart.jumpXMin < heart.jumpXMax);
+  assert.ok(finale.obstacles.some(item => item.id === "memory-barrier" && item.sensorId === "memory-sensor"));
+  assert.ok(finale.obstacles.some(item => item.id === "heart-barrier" && item.sensorId === "heart-sensor"));
+});
+
+test("finale sensor hints are projected from their assigned crystals", () => {
+  const finale = getLevelById(20);
+  for (const sensor of finale.sensors) {
+    const hint = finale.hintSteps.find(item => item.action === "charge-sensor" && item.sensorId === sensor.id);
+    assert.ok(hint, `missing hint for ${sensor.id}`);
+    const crystal = crystalsFor(finale).find(item => item.id === sensor.crystalId);
+    const projection = ShadowProjection.calculate({
+      lightX: hint.x,
+      lightY: hint.y,
+      obstacle: crystal,
+      groundY: finale.world.groundY,
+      gapStart: 0,
+      gapEnd: finale.world.width
+    });
+    assert.equal(ShadowProjection.intersectsRect(projection.polygon, sensor), true);
+  }
+});
+
 test("level navigation helpers cover all twenty levels", () => {
   assert.equal(getLevelById(6)?.key, "last-cycle");
   assert.equal(getLevelById(20)?.key, "final-cycle");
