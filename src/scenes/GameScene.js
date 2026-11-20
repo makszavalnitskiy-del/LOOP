@@ -179,7 +179,15 @@ export class GameScene extends Phaser.Scene {
         .setStrokeStyle(1, 0xc5faff, 0.32).setDepth(8);
       const halo = this.add.circle(art.x, art.y, Math.max(data.width, data.height) * 0.58, color, 0.07).setDepth(6);
       this.tweens.add({ targets: halo, alpha: { from: 0.035, to: 0.13 }, scale: { from: 0.86, to: 1.12 }, duration: 1300, yoyo: true, repeat: -1 });
-      const obstacle = { data, art, core, halo, x: data.x, y: data.y, width: data.width, height: data.height, direction: data.patrol?.direction ?? 1 };
+      let physicsBody = null;
+      if (data.type === "barrier") {
+        this.physics.add.existing(art);
+        physicsBody = art.body;
+        physicsBody.setAllowGravity(false);
+        physicsBody.setImmovable(true);
+        physicsBody.setSize(data.width, data.height);
+      }
+      const obstacle = { data, art, core, halo, physicsBody, x: data.x, y: data.y, width: data.width, height: data.height, direction: data.patrol?.direction ?? 1 };
       this.obstacles.push(obstacle);
       if (data.type === "crystal") {
         const gap = this.gaps.find(item => item.id === data.bridgeId?.replace("bridge-", "gap-")) ??
@@ -253,6 +261,7 @@ export class GameScene extends Phaser.Scene {
     this.arzonBaseScaleY = this.arzon.scaleY;
     this.playerVisual.add(this.arzon);
     this.playerVisual.setScale(1);
+    this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     this.wasGrounded = false;
     this.landSquash = 0;
   }
@@ -416,6 +425,9 @@ export class GameScene extends Phaser.Scene {
     for (const item of this.bridges) {
       item.collider = this.physics.add.collider(this.player, item.bridge);
     }
+    for (const obstacle of this.obstacles) {
+      if (obstacle.physicsBody) this.platformColliders.push(this.physics.add.collider(this.player, obstacle.art));
+    }
   }
 
   createLevelIntro() {
@@ -444,6 +456,7 @@ export class GameScene extends Phaser.Scene {
         obstacle.direction = 1;
       }
       obstacle.art.setPosition(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2);
+      if (obstacle.physicsBody) obstacle.physicsBody.updateFromGameObject();
       obstacle.core.setPosition(obstacle.art.x, obstacle.art.y);
       obstacle.halo.setPosition(obstacle.art.x, obstacle.art.y);
     }
