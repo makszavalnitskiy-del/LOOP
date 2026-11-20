@@ -340,9 +340,9 @@ finalLevel.obstacles = [
 ];
 finalLevel.sensors = [
   { id: "memory-sensor", phase: 1, type: "shadow-sensor", x: 370, y: 390, width: 72, height: 48,
-    requiredHold: 1250, targetObstacleId: "memory-barrier", color: 0x9d83ff },
+    requiredHold: 1250, targetObstacleId: "memory-barrier", crystalId: "memory-crystal", color: 0x9d83ff },
   { id: "heart-sensor", phase: 3, type: "shadow-sensor", x: 1210, y: 370, width: 82, height: 58,
-    requiredHold: 1150, targetObstacleId: "heart-barrier", color: 0xffd28a,
+    requiredHold: 1150, targetObstacleId: "heart-barrier", crystalId: "heart-crystal", color: 0xffd28a,
     holdToMaintain: true, requiresJump: true, jumpXMin: 1510, jumpXMax: 1730 }
 ];
 finalLevel.lampBounds = { minX: 65, maxX: 1150, minY: 82, maxY: 330 };
