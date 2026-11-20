@@ -95,7 +95,7 @@ export const LEVELS = [
     ],
     gaps: [{ id: "resonance-gap", x: 420, y: 496, width: 280, height: 104 }],
     obstacles: [
-      { id: "bridge-crystal", type: "crystal", x: 310, y: 345, width: 110, height: 70, color: 0x77eaff, movable: false, patrol: null, bridgeId: "bridge-1" },
+      { id: "bridge-crystal", type: "crystal", x: 310, y: 345, width: 150, height: 70, color: 0x77eaff, movable: false, patrol: null, bridgeId: "bridge-1" },
       { id: "laser-barrier", type: "barrier", x: 1050, y: 390, width: 24, height: 212, color: 0xff4fd8, movable: false, patrol: null, sensorId: "sensor-lock" }
     ],
     sensors: [{ id: "sensor-lock", type: "shadow-sensor", x: 340, y: 365, width: 58, height: 58, requiredHold: 1200, targetObstacleId: "laser-barrier", color: 0x9d83ff }],
@@ -120,8 +120,8 @@ export const LEVELS = [
       { id: "second-gap", x: 780, y: 496, width: 300, height: 104 }
     ],
     obstacles: [
-      { id: "crystal-static", type: "crystal", x: 250, y: 335, width: 100, height: 70, color: 0x70eaff, movable: false, patrol: null, bridgeId: "bridge-1" },
-      { id: "crystal-orbit", type: "crystal", x: 865, y: 315, width: 100, height: 72, color: 0xc18cff, movable: true, patrol: { axis: "y", min: 275, max: 375, speed: 68, start: 315, direction: 1 }, bridgeId: "bridge-2" }
+      { id: "crystal-static", type: "crystal", x: 250, y: 335, width: 120, height: 70, color: 0x70eaff, movable: false, patrol: null, bridgeId: "bridge-1" },
+      { id: "crystal-orbit", type: "crystal", x: 840, y: 315, width: 200, height: 72, color: 0xc18cff, movable: true, patrol: { axis: "y", min: 275, max: 375, speed: 68, start: 315, direction: 1 }, bridgeId: "bridge-2" }
     ],
     sensors: [],
     lampBounds: { minX: 70, maxX: 980, minY: 85, maxY: 335 },
@@ -145,11 +145,11 @@ export const LEVELS = [
       { id: "second-gap", x: 930, y: 496, width: 330, height: 104 }
     ],
     obstacles: [
-      { id: "crystal-static", type: "crystal", x: 280, y: 330, width: 110, height: 74, color: 0x70eaff, movable: false, patrol: null, bridgeId: "bridge-1" },
-      { id: "crystal-patrol", type: "crystal", x: 820, y: 310, width: 110, height: 76, color: 0xd08cff, movable: true, patrol: { axis: "x", min: 780, max: 880, speed: 92, start: 820, direction: 1 }, bridgeId: "bridge-2" },
+      { id: "crystal-static", type: "crystal", x: 320, y: 330, width: 220, height: 74, color: 0x70eaff, movable: false, patrol: null, bridgeId: "bridge-1" },
+      { id: "crystal-patrol", type: "crystal", x: 700, y: 310, width: 220, height: 76, color: 0xd08cff, movable: true, patrol: { axis: "x", min: 680, max: 760, speed: 92, start: 700, direction: 1 }, bridgeId: "bridge-2" },
       { id: "final-laser", type: "barrier", x: 1510, y: 390, width: 26, height: 212, color: 0xff4fd8, movable: false, patrol: null, sensorId: "final-sensor" }
     ],
-    sensors: [{ id: "final-sensor", type: "shadow-sensor", x: 295, y: 355, width: 64, height: 64, requiredHold: 1500, targetObstacleId: "final-laser", color: 0x9d83ff }],
+    sensors: [{ id: "final-sensor", type: "shadow-sensor", x: 450, y: 360, width: 64, height: 64, requiredHold: 1500, targetObstacleId: "final-laser", color: 0x9d83ff }],
     lampBounds: { minX: 95, maxX: 335, minY: 105, maxY: 270 },
     lampStart: { x: 155, y: 165 }, playerStart: { x: 90, y: 450 },
     portal: { x: 2440, y: 430, width: 56, height: 66 },
