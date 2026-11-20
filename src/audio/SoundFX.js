@@ -279,6 +279,31 @@ export class SoundFX {
     this.tone({ frequency: 110, endFrequency: 440, duration: 0.8, type: "triangle", volume: 0.045 });
   }
 
+  playFinale() {
+    // A warm, sustained major-leaning chord with a rising overtone shimmer.
+    const chord = [130.81, 164.81, 196, 261.63, 329.63, 392];
+    chord.forEach((frequency, index) => {
+      this.tone({
+        frequency,
+        endFrequency: frequency * (index < 3 ? 1.015 : 1.035),
+        duration: 3.6 + (index % 3) * 0.35,
+        type: index === 0 ? "triangle" : "sine",
+        volume: index === 0 ? 0.075 : 0.045 - index * 0.003,
+        delay: index * 0.075
+      });
+    });
+    [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+      this.tone({
+        frequency,
+        endFrequency: frequency * 1.012,
+        duration: 2.2,
+        type: "sine",
+        volume: 0.035,
+        delay: 0.48 + index * 0.13
+      });
+    });
+  }
+
   playDeath() {
     this.tone({ frequency: 180, endFrequency: 28, duration: 0.72, type: "sawtooth", volume: 0.095 });
     this.tone({ frequency: 72, endFrequency: 18, duration: 0.8, type: "sine", volume: 0.11, delay: 0.04 });
