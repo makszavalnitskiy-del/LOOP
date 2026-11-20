@@ -150,6 +150,6 @@ export class MenuScene extends Phaser.Scene {
     this.isTransitioning = true;
     this.registry.set("requestedLevelId", Math.max(1, Math.min(3, Math.floor(Number(levelId) || 1))));
     this.cameras.main.fadeOut(400, 7, 7, 20);
-    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("AwakeningScene"));
+    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("GameScene", { levelIndex: this.registry.get("requestedLevelId") - 1 }));
   }
 }
