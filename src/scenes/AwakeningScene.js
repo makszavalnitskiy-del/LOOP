@@ -81,10 +81,18 @@ export class AwakeningScene extends Phaser.Scene {
     this.blinkArt = this.add.graphics();
     this.blinkArt.lineStyle(2, 0xd8ffff, 1);
     this.blinkArt.beginPath();
+    // Phaser Graphics path builder has no quadraticBezierTo method;
+    // approximate each eyelid with short line segments for compatibility.
     this.blinkArt.moveTo(-10.5, -8);
-    this.blinkArt.quadraticBezierTo(-6.5, -4.5, -2.5, -8);
+    this.blinkArt.lineTo(-8.5, -6.4);
+    this.blinkArt.lineTo(-6.5, -5.5);
+    this.blinkArt.lineTo(-4.5, -6.4);
+    this.blinkArt.lineTo(-2.5, -8);
     this.blinkArt.moveTo(2.5, -8);
-    this.blinkArt.quadraticBezierTo(6.5, -4.5, 10.5, -8);
+    this.blinkArt.lineTo(4.5, -6.4);
+    this.blinkArt.lineTo(6.5, -5.5);
+    this.blinkArt.lineTo(8.5, -6.4);
+    this.blinkArt.lineTo(10.5, -8);
     this.blinkArt.strokePath();
     this.blinkArt.setAlpha(0);
     this.playerVisual.add(this.blinkArt);
