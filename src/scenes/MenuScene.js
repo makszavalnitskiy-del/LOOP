@@ -93,7 +93,7 @@ export class MenuScene extends Phaser.Scene {
     const x = w / 2;
     const progress = this.readSavedProgress();
     const unlocked = progress.level;
-    const continueLevel = Math.max(1, Math.min(6, progress.lastPlayed || unlocked));
+    const continueLevel = Math.max(1, Math.min(6, unlocked));
     this.createNeonButton({ x, y: 420, width: 310, height: 48, label: "НОВАЯ ИГРА", fill: 0x343b9e, hover: 0x4d5bd4, glow: 0x718cff, fontSize: "16px", action: () => this.newGame(progress) });
     this.createNeonButton({ x, y: 477, width: 250, height: 38, label: "ПРОДОЛЖИТЬ · УРОВЕНЬ " + continueLevel, fill: 0x252a68, hover: 0x414a9d, glow: 0x8d79ff, fontSize: "12px", action: () => this.startGame(continueLevel) });
     const columns = w < 620 ? 3 : 6;
