@@ -1,0 +1,718 @@
+import { LEVELS } from "../data/levels.js";
+import { ShadowProjection } from "../mechanics/shadows/ShadowProjection.js";
+
+const PROGRESS_KEY = "loop_progress_v1";
+const LEGACY_PROGRESS_KEYS = ["loop_progress", "loopProgress"];
+const COYOTE_TIME = 100;
+const JUMP_BUFFER_TIME = 100;
+const PLAYER_SPEED = 250;
+const PLAYER_ACCELERATION = 1450;
+const PLAYER_DRAG = 1850;
+const JUMP_SPEED = 440;
+const PLAYER_WIDTH = 28;
+const PLAYER_HEIGHT = 38;
+
+export class GameScene extends Phaser.Scene {
+  constructor() {
+    super("GameScene");
+    this.level = null;
+    this.levelIndex = 0;
+    this.soundFX = null;
+    this.player = null;
+    this.playerVisual = null;
+    this.pushi = null;
+    this.platforms = [];
+    this.obstacles = [];
+    this.bridges = [];
+    this.gaps = [];
+    this.pointerOwners = new Map();
+    this.mobileInput = { left: false, right: false, jump: false };
+    this.jumpBufferUntil = 0;
+    this.coyoteUntil = 0;
+    this.wasGrounded = false;
+    this.facing = 1;
+    this.dead = false;
+    this.completed = false;
+    this.transitioning = false;
+    this.levelElapsed = 0;
+    this.levelStartTime = 0;
+    this.cleanupHandlers = [];
+  }
+
+  init(data = {}) {
+    const requested = Number(data.levelIndex);
+    let index = Number.isInteger(requested) ? requested : -1;
+    if (index < 0 || index >= LEVELS.length) index = this.readSavedLevelIndex();
+    this.levelIndex = Phaser.Math.Clamp(index, 0, LEVELS.length - 1);
+    this.level = LEVELS[this.levelIndex];
+    this.dead = false;
+    this.completed = false;
+    this.transitioning = false;
+    this.levelElapsed = 0;
+    this.jumpBufferUntil = 0;
+    this.coyoteUntil = 0;
+    this.pointerOwners.clear();
+    this.mobileInput = { left: false, right: false, jump: false };
+  }
+
+  create() {
+    if (!this.level) {
+      this.scene.start("MenuScene");
+      return;
+    }
+    this.soundFX = this.registry.get("soundFX") ?? null;
+    const world = this.level.world;
+    this.cameras.main.setBackgroundColor(world.background ?? 0x09091b);
+    this.physics.world.setBounds(0, 0, world.width, world.height);
+    this.cameras.main.setBounds(0, 0, world.width, world.height);
+    this.createBackdrop();
+    this.createWorldGeometry();
+    this.createObstacles();
+    this.createLamp();
+    this.createPlayer();
+    this.createCompanion();
+    this.createPortal();
+    this.createHud();
+    this.createTouchControls();
+    this.createKeyboardControls();
+    this.createCollisions();
+    this.createLevelIntro();
+    this.updateAllBridges();
+    this.levelStartTime = this.time.now;
+    this.soundFX?.startAmbient?.();
+    this.cameras.main.fadeIn(450, 7, 7, 20);
+    this.events.once("shutdown", this.handleShutdown, this);
+    this.events.once("destroy", this.handleShutdown, this);
+    this.input.on("pointerup", this.handlePointerUp, this);
+    this.input.on("pointerupoutside", this.handlePointerUp, this);
+    this.input.on("gameout", this.handleAllPointersUp, this);
+    this.input.on("drag", this.handleLampDrag, this);
+    this.input.on("dragend", this.handleLampDragEnd, this);
+    this.cleanupHandlers.push(
+      ["pointerup", this.handlePointerUp],
+      ["pointerupoutside", this.handlePointerUp],
+      ["gameout", this.handleAllPointersUp],
+      ["drag", this.handleLampDrag],
+      ["dragend", this.handleLampDragEnd]
+    );
+  }
+
+  readSavedLevelIndex() {
+    try {
+      for (const key of [PROGRESS_KEY, ...LEGACY_PROGRESS_KEYS]) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        let parsed;
+        try { parsed = JSON.parse(raw); } catch { parsed = Number(raw); }
+        const levelNumber = Number(typeof parsed === "number"
+          ? parsed
+          : parsed?.level ?? parsed?.currentLevel ?? parsed?.lastUnlockedLevel ?? parsed?.unlockedLevel ?? 1);
+        if (Number.isFinite(levelNumber)) return Phaser.Math.Clamp(Math.floor(levelNumber) - 1, 0, LEVELS.length - 1);
+      }
+    } catch (error) {
+      console.warn("[LOOP] Не удалось прочитать прогресс:", error);
+    }
+    return 0;
+  }
+
+  createBackdrop() {
+    const { width, height, background } = this.level.world;
+    const graphics = this.add.graphics().setDepth(-20);
+    graphics.fillGradientStyle(background ?? 0x09091b, 0x101333, 0x171044, 0x080817, 1);
+    graphics.fillRect(0, 0, width, height);
+    graphics.lineStyle(1, 0x7584df, 0.08);
+    for (let x = 0; x < width; x += 80) graphics.lineBetween(x, 0, x, height);
+    for (let y = 0; y < height; y += 80) graphics.lineBetween(0, y, width, y);
+    const stars = this.add.graphics().setDepth(-19);
+    for (let i = 0; i < Math.ceil(width / 12); i++) {
+      const x = Phaser.Math.Between(0, width);
+      const y = Phaser.Math.Between(20, 390);
+      stars.fillStyle(0x9dbdff, Phaser.Math.FloatBetween(0.12, 0.45));
+      stars.fillCircle(x, y, Phaser.Math.FloatBetween(0.5, 1.5));
+    }
+    this.add.text(34, 34, "LOOP  /  " + String(this.level.id).padStart(2, "0"), {
+      fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "900",
+      color: "#7386c7", letterSpacing: 2
+    }).setScrollFactor(0).setDepth(40);
+  }
+
+  createWorldGeometry() {
+    const groundY = this.level.world.groundY;
+    this.gaps = this.level.gaps ?? [];
+    this.platforms = [];
+    for (const data of this.level.platforms ?? []) {
+      const platform = this.add.rectangle(
+        data.x + data.width / 2, data.y + data.height / 2,
+        data.width, data.height, 0x20264f, 1
+      ).setStrokeStyle(2, 0x5669b6, 0.8).setDepth(2);
+      this.physics.add.existing(platform, true);
+      platform.body.setSize(data.width, data.height);
+      this.platforms.push(platform);
+      const edge = this.add.graphics().setDepth(3);
+      edge.lineStyle(2, 0x69eaff, 0.42);
+      edge.lineBetween(data.x, data.y, data.x + data.width, data.y);
+      for (let x = data.x + 28; x < data.x + data.width; x += 96) {
+        edge.fillStyle(0x72eaff, 0.35);
+        edge.fillCircle(x, data.y + 15, 1.5);
+      }
+    }
+    for (const gap of this.gaps) {
+      const warning = this.add.rectangle(gap.x + gap.width / 2, groundY + 42, gap.width, 84, 0x080817, 0.94).setDepth(1);
+      warning.setStrokeStyle(1, 0x6e5cb7, 0.18);
+      const glow = this.add.rectangle(gap.x + gap.width / 2, groundY + 3, gap.width, 5, 0x7a62ff, 0.3).setDepth(4);
+      this.tweens.add({ targets: glow, alpha: { from: 0.12, to: 0.5 }, duration: 1100, yoyo: true, repeat: -1 });
+    }
+    this.worldGroundY = groundY;
+  }
+
+  createObstacles() {
+    this.obstacles = [];
+    this.bridges = [];
+    const crystals = (this.level.obstacles ?? []).filter(item => item.type === "crystal");
+    for (const data of this.level.obstacles ?? []) {
+      const color = data.color ?? (data.type === "crystal" ? 0x70eaff : 0x9a6cff);
+      const art = this.add.rectangle(
+        data.x + data.width / 2, data.y + data.height / 2,
+        data.width, data.height, color, data.type === "crystal" ? 0.72 : 0.55
+      ).setStrokeStyle(2, color, 0.95).setDepth(7);
+      const core = this.add.rectangle(art.x, art.y, data.width * 0.62, data.height * 0.58, 0xd9faff, 0.12)
+        .setStrokeStyle(1, 0xc5faff, 0.32).setDepth(8);
+      const halo = this.add.circle(art.x, art.y, Math.max(data.width, data.height) * 0.58, color, 0.07).setDepth(6);
+      this.tweens.add({ targets: halo, alpha: { from: 0.035, to: 0.13 }, scale: { from: 0.86, to: 1.12 }, duration: 1300, yoyo: true, repeat: -1 });
+      const obstacle = { data, art, core, halo, x: data.x, y: data.y, width: data.width, height: data.height, direction: data.patrol?.direction ?? 1 };
+      this.obstacles.push(obstacle);
+      if (data.type === "crystal") {
+        const gap = this.gaps.find(item => item.id === data.bridgeId?.replace("bridge-", "gap-")) ??
+          this.gaps[crystals.indexOf(data)] ?? this.gaps[this.bridges.length];
+        if (gap) this.createBridge(data, gap);
+      }
+    }
+    if (this.bridges.length < this.gaps.length) {
+      for (let index = this.bridges.length; index < this.gaps.length; index++) {
+        const gap = this.gaps[index];
+        this.createBridge(null, gap);
+      }
+    }
+  }
+
+  createBridge(obstacleData, gap) {
+    const centerX = gap.x + gap.width / 2;
+    const bridge = this.add.rectangle(centerX, this.worldGroundY - 5, gap.width, 12, 0x69eaff, 0.08)
+      .setStrokeStyle(2, 0x83f1ff, 0.12).setDepth(5);
+    this.physics.add.existing(bridge);
+    bridge.body.setAllowGravity(false);
+    bridge.body.setImmovable(true);
+    bridge.body.setSize(gap.width, 12);
+    bridge.body.enable = false;
+    const glow = this.add.rectangle(centerX, this.worldGroundY - 5, gap.width, 22, 0x45dfff, 0.05).setDepth(4);
+    this.bridges.push({
+      id: obstacleData?.bridgeId ?? "bridge-" + (this.bridges.length + 1),
+      obstacleId: obstacleData?.id ?? null,
+      gap, bridge, glow, active: false, shadow: null
+    });
+  }
+
+  createLamp() {
+    const start = this.level.lampStart;
+    const bounds = this.level.lampBounds;
+    this.lampBounds = bounds;
+    this.lampGlow = this.add.circle(start.x, start.y, 82, 0x4bdfff, 0.085).setDepth(9);
+    this.tweens.add({ targets: this.lampGlow, scale: { from: 0.9, to: 1.12 }, alpha: { from: 0.05, to: 0.13 }, duration: 1400, yoyo: true, repeat: -1 });
+    this.lamp = this.add.container(start.x, start.y).setDepth(12);
+    const lampGraphic = this.add.graphics();
+    lampGraphic.fillStyle(0x55eaff, 0.16); lampGraphic.fillCircle(0, 0, 31);
+    lampGraphic.fillStyle(0xa8f8ff, 1); lampGraphic.fillCircle(0, 0, 11);
+    lampGraphic.lineStyle(3, 0x7eeeff, 1); lampGraphic.strokeCircle(0, 0, 20);
+    lampGraphic.lineStyle(1, 0xffffff, 0.7); lampGraphic.strokeCircle(0, 0, 27);
+    this.lamp.add(lampGraphic);
+    this.lamp.setSize(58, 58);
+    this.lamp.setInteractive(new Phaser.Geom.Circle(0, 0, 29), Phaser.Geom.Circle.Contains);
+    this.input.setDraggable(this.lamp);
+    this.lampDragPointerId = null;
+    this.lamp.on("pointerdown", pointer => { this.lampDragPointerId = pointer.id; });
+    this.lamp.on("pointerup", pointer => { if (this.lampDragPointerId === pointer.id) this.lampDragPointerId = null; });
+    this.lamp.on("pointerupoutside", pointer => { if (this.lampDragPointerId === pointer.id) this.lampDragPointerId = null; });
+    this.rayGraphics = this.add.graphics().setDepth(10);
+    this.shadowGraphics = this.add.graphics().setDepth(4);
+  }
+
+  createPlayer() {
+    const start = this.level.playerStart;
+    this.player = this.physics.add.sprite(start.x, start.y, "arzon");
+    this.player.setVisible(false);
+    this.player.setSize(PLAYER_WIDTH, PLAYER_HEIGHT);
+    this.player.setOffset((this.player.width - PLAYER_WIDTH) / 2, (this.player.height - PLAYER_HEIGHT) / 2);
+    this.player.setCollideWorldBounds(false);
+    this.player.setGravityY(1050);
+    this.player.setMaxVelocity(PLAYER_SPEED, 900);
+    this.player.setDragX(PLAYER_DRAG);
+    this.player.setBounce(0);
+    this.playerVisual = this.add.container(start.x, start.y).setDepth(20);
+    this.arzon = this.add.image(0, -10, "arzon").setDisplaySize(116, 126);
+    this.arzonBaseScaleX = this.arzon.scaleX;
+    this.arzonBaseScaleY = this.arzon.scaleY;
+    this.playerVisual.add(this.arzon);
+    this.playerVisual.setScale(1);
+    this.wasGrounded = false;
+    this.landSquash = 0;
+  }
+
+  createCompanion() {
+    const start = this.level.playerStart;
+    this.pushiShadow = this.add.ellipse(start.x - 55, this.worldGroundY + 39, 36, 8, 0x050611, 0.5).setDepth(13);
+    this.pushiAura = this.add.circle(start.x - 55, start.y, 26, 0x9b63ff, 0.09).setDepth(14);
+    this.pushi = this.add.image(start.x - 55, start.y, "pushi").setDisplaySize(78, 78).setDepth(15);
+    this.pushiBaseScaleX = this.pushi.scaleX;
+    this.pushiBaseScaleY = this.pushi.scaleY;
+  }
+
+  createPortal() {
+    const data = this.level.portal;
+    this.portal = this.add.container(data.x + data.width / 2, data.y + data.height / 2).setDepth(11);
+    const ring = this.add.graphics();
+    ring.lineStyle(5, 0x987cff, 0.95); ring.strokeEllipse(0, 0, data.width * 0.78, data.height * 0.98);
+    ring.lineStyle(2, 0x59eaff, 0.8); ring.strokeEllipse(0, 0, data.width * 0.48, data.height * 0.76);
+    ring.fillStyle(0x754dff, 0.17); ring.fillEllipse(0, 0, data.width * 0.6, data.height * 0.84);
+    this.portal.add(ring);
+    this.portalBounds = new Phaser.Geom.Rectangle(data.x, data.y, data.width, data.height);
+    this.tweens.add({ targets: this.portal, alpha: { from: 0.68, to: 1 }, scale: { from: 0.94, to: 1.06 }, duration: 1250, yoyo: true, repeat: -1 });
+  }
+
+  createHud() {
+    const width = this.scale.width;
+    this.hud = this.add.container(0, 0).setScrollFactor(0).setDepth(50);
+    const title = this.add.text(26, 22, this.level.title.toUpperCase(), {
+      fontFamily: "Nunito, sans-serif", fontSize: "15px", fontStyle: "900", color: "#e3f7ff",
+      shadow: { color: "#5a7cff", blur: 12, fill: true }
+    });
+    this.hud.add(title);
+    this.objectiveText = this.add.text(26, 47, this.level.texts?.objective ?? this.level.description, {
+      fontFamily: "Nunito, sans-serif", fontSize: "10px", fontStyle: "800", color: "#8ea5d8"
+    });
+    this.hud.add(this.objectiveText);
+    this.createHudButton(width - 278, 30, 76, 30, "РЕСТАРТ", () => this.restartLevel());
+    this.createHudButton(width - 190, 30, 68, 30, "МЕНЮ", () => this.returnToMenu());
+    this.muteHudButton = this.createHudButton(width - 112, 30, 90, 30, this.getMuteLabel(), () => {
+      this.soundFX?.toggleMute?.();
+      this.muteHudButton?.label.setText(this.getMuteLabel());
+    });
+  }
+
+  createHudButton(x, y, width, height, label, callback) {
+    const visual = this.add.graphics();
+    visual.fillStyle(0x171e48, 0.92); visual.fillRoundedRect(x - width / 2, y - height / 2, width, height, 8);
+    visual.lineStyle(1, 0x6e91e8, 0.68); visual.strokeRoundedRect(x - width / 2, y - height / 2, width, height, 8);
+    const text = this.add.text(x, y, label, {
+      fontFamily: "Nunito, sans-serif", fontSize: "9px", fontStyle: "900", color: "#e6faff"
+    }).setOrigin(0.5);
+    const zone = this.add.zone(x, y, width, height).setInteractive({ useHandCursor: true });
+    zone.on("pointerdown", pointer => {
+      if (pointer.button !== 0 || this.transitioning) return;
+      this.unlockAudio();
+      callback();
+    });
+    zone.on("pointerover", () => text.setColor("#78edff"));
+    zone.on("pointerout", () => text.setColor("#e6faff"));
+    this.hud.add([visual, text, zone]);
+    return { visual, label: text, zone };
+  }
+
+  getMuteLabel() {
+    return this.soundFX?.isMuted?.() ? "ЗВУК: ВЫКЛ" : "ЗВУК: ВКЛ";
+  }
+
+  createTouchControls() {
+    this.touchControls = [];
+    const addControl = (x, y, label, action, width = 58) => {
+      const graphic = this.add.graphics().setScrollFactor(0).setDepth(51);
+      graphic.fillStyle(0x20295b, 0.72); graphic.fillCircle(x, y, width / 2);
+      graphic.lineStyle(2, 0x6deaff, 0.72); graphic.strokeCircle(x, y, width / 2);
+      const text = this.add.text(x, y, label, {
+        fontFamily: "Nunito, sans-serif", fontSize: "22px", fontStyle: "900", color: "#e5fbff"
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(52);
+      const zone = this.add.zone(x, y, width, width).setInteractive().setScrollFactor(0).setDepth(53);
+      zone.on("pointerdown", pointer => {
+        if (this.transitioning || this.dead || this.completed) return;
+        this.unlockAudio();
+        this.pointerOwners.set(pointer.id, action);
+        if (action === "jump") this.queueJump();
+        this.refreshMobileInput();
+        graphic.setAlpha(1);
+      });
+      this.touchControls.push({ zone, graphic, text, action });
+    };
+    const h = this.scale.height;
+    addControl(56, h - 62, "◀", "left");
+    addControl(124, h - 62, "▶", "right");
+    addControl(this.scale.width - 68, h - 66, "↑", "jump", 66);
+  }
+
+  refreshMobileInput() {
+    const owners = [...this.pointerOwners.values()];
+    this.mobileInput.left = owners.includes("left");
+    this.mobileInput.right = owners.includes("right");
+  }
+
+  handlePointerUp(pointer) {
+    this.pointerOwners.delete(pointer.id);
+    this.refreshMobileInput();
+    if (this.lampDragPointerId === pointer.id) this.lampDragPointerId = null;
+    for (const control of this.touchControls ?? []) {
+      const stillPressed = [...this.pointerOwners.values()].includes(control.action);
+      control.graphic.setAlpha(stillPressed ? 1 : 0.82);
+    }
+  }
+
+  handleAllPointersUp() {
+    this.pointerOwners.clear();
+    this.mobileInput.left = false;
+    this.mobileInput.right = false;
+    this.mobileInput.jump = false;
+    this.lampDragPointerId = null;
+  }
+
+  handleLampDrag(pointer, gameObject, dragX, dragY) {
+    if (gameObject !== this.lamp || this.transitioning || this.dead || this.completed) return;
+    if (this.lampDragPointerId !== null && pointer.id !== this.lampDragPointerId) return;
+    this.lampDragPointerId = pointer.id;
+    this.lamp.setPosition(
+      Phaser.Math.Clamp(dragX, this.lampBounds.minX, this.lampBounds.maxX),
+      Phaser.Math.Clamp(dragY, this.lampBounds.minY, this.lampBounds.maxY)
+    );
+    this.lampGlow.setPosition(this.lamp.x, this.lamp.y);
+    this.updateAllBridges();
+  }
+
+  handleLampDragEnd(pointer, gameObject) {
+    if (gameObject === this.lamp && this.lampDragPointerId === pointer.id) this.lampDragPointerId = null;
+  }
+
+  createKeyboardControls() {
+    if (!this.input.keyboard) return;
+    this.keys = this.input.keyboard.addKeys({
+      leftA: Phaser.Input.Keyboard.KeyCodes.A,
+      leftArrow: Phaser.Input.Keyboard.KeyCodes.LEFT,
+      rightD: Phaser.Input.Keyboard.KeyCodes.D,
+      rightArrow: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+      jumpW: Phaser.Input.Keyboard.KeyCodes.W,
+      jumpUp: Phaser.Input.Keyboard.KeyCodes.UP,
+      jumpSpace: Phaser.Input.Keyboard.KeyCodes.SPACE
+    });
+    this.keyboardJumpHandler = event => {
+      if ([32, 38, 87].includes(event.keyCode)) this.queueJump();
+    };
+    this.input.keyboard.on("keydown", this.keyboardJumpHandler);
+  }
+
+  queueJump() {
+    this.jumpBufferUntil = this.time.now + JUMP_BUFFER_TIME;
+  }
+
+  createCollisions() {
+    this.platformColliders = [];
+    for (const platform of this.platforms) {
+      this.platformColliders.push(this.physics.add.collider(this.player, platform));
+    }
+    for (const item of this.bridges) {
+      item.collider = this.physics.add.collider(this.player, item.bridge);
+    }
+  }
+
+  createLevelIntro() {
+    const title = this.add.text(this.scale.width / 2, 135, this.level.texts?.intro ?? this.level.title.toUpperCase(), {
+      fontFamily: "Nunito, sans-serif", fontSize: "24px", fontStyle: "900", color: "#dffaff",
+      shadow: { color: "#648cff", blur: 18, fill: true }
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(60);
+    const subtitle = this.add.text(this.scale.width / 2, 169, this.level.subtitle ?? "", {
+      fontFamily: "Nunito, sans-serif", fontSize: "12px", fontStyle: "800", color: "#9eaddc"
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(60);
+    this.tweens.add({ targets: [title, subtitle], alpha: 0, delay: 1900, duration: 650, onComplete: () => { title.destroy(); subtitle.destroy(); } });
+  }
+
+  updatePatrols(delta) {
+    const seconds = delta / 1000;
+    for (const obstacle of this.obstacles) {
+      const patrol = obstacle.data.patrol;
+      if (!patrol || !obstacle.data.movable) continue;
+      const axis = patrol.axis === "y" ? "y" : "x";
+      obstacle[axis] += (Number(patrol.speed) || 0) * seconds * obstacle.direction;
+      if (obstacle[axis] >= patrol.max) {
+        obstacle[axis] = patrol.max;
+        obstacle.direction = -1;
+      } else if (obstacle[axis] <= patrol.min) {
+        obstacle[axis] = patrol.min;
+        obstacle.direction = 1;
+      }
+      obstacle.art.setPosition(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2);
+      obstacle.core.setPosition(obstacle.art.x, obstacle.art.y);
+      obstacle.halo.setPosition(obstacle.art.x, obstacle.art.y);
+    }
+  }
+
+  updateAllBridges() {
+    if (!this.lamp || !this.bridges) return;
+    this.shadowGraphics.clear();
+    this.rayGraphics.clear();
+    for (const item of this.bridges) {
+      const obstacle = this.obstacles.find(candidate => candidate.data.id === item.obstacleId);
+      if (!obstacle) {
+        item.active = false;
+        item.bridge.body.enable = false;
+        item.bridge.setAlpha(0.06);
+        continue;
+      }
+      const shadow = ShadowProjection.calculate({
+        lightX: this.lamp.x,
+        lightY: this.lamp.y,
+        obstacle: { x: obstacle.x, y: obstacle.y, width: obstacle.width, height: obstacle.height },
+        groundY: this.worldGroundY,
+        gapStart: item.gap.x,
+        gapEnd: item.gap.x + item.gap.width
+      });
+      item.shadow = shadow;
+      const color = obstacle.data.color ?? 0x70eaff;
+      if (shadow.polygon.length) {
+        this.shadowGraphics.fillStyle(color, shadow.active ? 0.2 : 0.055);
+        this.shadowGraphics.fillPoints(shadow.polygon.map(point => new Phaser.Geom.Point(point.x, point.y)), true);
+        this.shadowGraphics.lineStyle(1.5, color, shadow.active ? 0.62 : 0.15);
+        this.shadowGraphics.strokePoints(shadow.polygon.map(point => new Phaser.Geom.Point(point.x, point.y)), true);
+        this.rayGraphics.lineStyle(1.5, 0x72eaff, 0.3);
+        this.rayGraphics.lineBetween(this.lamp.x, this.lamp.y, obstacle.x + obstacle.width / 2, obstacle.y);
+        this.rayGraphics.lineBetween(obstacle.x + obstacle.width / 2, obstacle.y, shadow.projectedLeft, this.worldGroundY);
+        this.rayGraphics.lineBetween(this.lamp.x, this.lamp.y, obstacle.x + obstacle.width / 2, obstacle.y);
+        this.rayGraphics.lineBetween(obstacle.x + obstacle.width / 2, obstacle.y, shadow.projectedRight, this.worldGroundY);
+      }
+      item.active = shadow.active;
+      item.bridge.body.enable = shadow.active;
+      if (shadow.active) {
+        const centerX = shadow.x + shadow.width / 2;
+        item.bridge.setPosition(centerX, this.worldGroundY - 5);
+        item.bridge.setSize(shadow.width, 12);
+        item.bridge.body.setSize(shadow.width, 12);
+        item.bridge.body.updateFromGameObject();
+        item.glow.setPosition(centerX, this.worldGroundY - 5);
+        item.glow.setSize(shadow.width, 22);
+        item.bridge.setAlpha(0.9);
+        item.bridge.setStrokeStyle(2, 0x8bf4ff, 0.85);
+        item.glow.setAlpha(0.32);
+      } else {
+        item.bridge.setAlpha(0.055);
+        item.bridge.setStrokeStyle(1, 0x6deaff, 0.12);
+        item.glow.setAlpha(0.035);
+      }
+    }
+  }
+
+  update(time, delta) {
+    if (!this.player || this.dead || this.completed || this.transitioning) return;
+    const safeDelta = Math.min(delta || 16.67, 40);
+    this.levelElapsed += safeDelta;
+    this.updatePatrols(safeDelta);
+    this.updateAllBridges();
+    this.updatePlayerMovement(time);
+    this.updateCharacterVisuals(time);
+    this.checkDeath();
+    this.checkPortal();
+  }
+
+  updatePlayerMovement(time) {
+    const body = this.player.body;
+    const left = Boolean(this.keys?.leftA.isDown || this.keys?.leftArrow.isDown || this.mobileInput.left);
+    const right = Boolean(this.keys?.rightD.isDown || this.keys?.rightArrow.isDown || this.mobileInput.right);
+    const direction = (right ? 1 : 0) - (left ? 1 : 0);
+    if (direction !== 0) {
+      body.setAccelerationX(direction * PLAYER_ACCELERATION);
+      body.setDragX(0);
+      this.facing = direction;
+    } else {
+      body.setAccelerationX(0);
+      body.setDragX(PLAYER_DRAG);
+    }
+    body.setMaxVelocity(PLAYER_SPEED, 950);
+
+    const grounded = body.blocked.down || body.touching.down;
+    if (grounded) this.coyoteUntil = time + COYOTE_TIME;
+    if (this.jumpBufferUntil >= time && time <= this.coyoteUntil) {
+      body.setVelocityY(-JUMP_SPEED);
+      this.jumpBufferUntil = 0;
+      this.coyoteUntil = 0;
+      this.wasGrounded = false;
+      this.soundFX?.playJump?.();
+    }
+  }
+
+  updateCharacterVisuals(time) {
+    const body = this.player.body;
+    const grounded = body.blocked.down || body.touching.down;
+    const vx = body.velocity.x;
+    const moving = grounded && Math.abs(vx) > 18;
+    if (grounded && !this.wasGrounded) {
+      this.landSquash = 1;
+      this.soundFX?.playLand?.();
+    }
+    this.wasGrounded = grounded;
+    this.landSquash = Phaser.Math.Linear(this.landSquash, 0, 0.2);
+    const bob = grounded ? (moving ? Math.abs(Math.sin(time / 72)) * 3 : Math.sin(time / 260) * 2) : 0;
+    this.playerVisual.setPosition(this.player.x, this.player.y + bob);
+    this.playerVisual.setScale(this.facing, 1);
+    const sx = grounded ? 1 + this.landSquash * (moving ? 0.1 : 0.16) : 0.91;
+    const sy = grounded ? 1 - this.landSquash * (moving ? 0.08 : 0.12) : 1.13;
+    this.arzon.setScale(this.arzonBaseScaleX * sx, this.arzonBaseScaleY * sy);
+    this.arzon.y = -10 + bob * 0.25;
+    this.arzon.angle = grounded ? Math.sin(time / (moving ? 95 : 310)) * (moving ? 2.4 : 1.2) : Phaser.Math.Clamp(vx / PLAYER_SPEED, -1, 1) * 4;
+
+    const targetX = this.player.x - this.facing * 64;
+    const targetY = this.player.y + (grounded ? 8 : 20);
+    this.pushi.x = Phaser.Math.Linear(this.pushi.x, targetX, 0.1);
+    this.pushi.y = Phaser.Math.Linear(this.pushi.y, targetY + Math.sin(time / 190) * 3, 0.11);
+    this.pushi.flipX = this.facing < 0;
+    const pulse = Math.sin(time / 145) * 0.035;
+    this.pushi.setScale(this.pushiBaseScaleX * (1 + pulse), this.pushiBaseScaleY * (1 - pulse));
+    this.pushi.angle = Math.sin(time / 330) * 2.2;
+    this.pushiAura.setPosition(this.pushi.x, this.pushi.y + 4);
+    this.pushiShadow.setPosition(this.pushi.x, this.worldGroundY + 39);
+    this.pushiShadow.setScale(grounded ? 1 : 0.72, 1);
+  }
+
+  checkDeath() {
+    if (this.player.y > this.worldGroundY + 40) this.killPlayer();
+  }
+
+  killPlayer() {
+    if (this.dead || this.completed) return;
+    this.dead = true;
+    this.player.body.enable = false;
+    this.playerVisual.setVisible(false);
+    this.pushi.setAlpha(0.25);
+    this.soundFX?.playDeath?.();
+    this.cameras.main.shake(260, 0.012);
+    const particles = this.add.particles(this.player.x, this.player.y, "arzon", {
+      speed: { min: 35, max: 190 }, angle: { min: 0, max: 360 },
+      scale: { start: 0.12, end: 0 }, alpha: { start: 0.9, end: 0 },
+      lifespan: 650, quantity: 18, blendMode: "ADD"
+    }).setDepth(35);
+    this.time.delayedCall(650, () => particles.destroy());
+    this.time.delayedCall(850, () => {
+      if (this.scene.isActive()) this.scene.restart({ levelIndex: this.levelIndex });
+    });
+  }
+
+  checkPortal() {
+    if (this.completed || this.transitioning) return;
+    const bounds = this.player.getBounds();
+    if (Phaser.Geom.Intersects.RectangleToRectangle(bounds, this.portalBounds)) {
+      const allBridgesActive = this.bridges.length > 0 && this.bridges.every(item => item.active);
+      if (allBridgesActive) this.completeLevel();
+    }
+  }
+
+  completeLevel() {
+    if (this.completed) return;
+    this.completed = true;
+    this.player.setVelocity(0, 0);
+    this.player.body.enable = false;
+    this.soundFX?.playTeleport?.();
+    this.saveProgress();
+    this.cameras.main.flash(280, 100, 220, 255);
+    this.showCompletionPanel();
+  }
+
+  saveProgress() {
+    const nextUnlocked = Math.min(LEVELS.length, this.level.id + 1);
+    const record = {
+      level: nextUnlocked,
+      lastCompletedLevel: this.level.id,
+      completedLevels: this.level.id,
+      updatedAt: Date.now()
+    };
+    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(record)); }
+    catch (error) { console.warn("[LOOP] Не удалось сохранить прогресс:", error); }
+  }
+
+  showCompletionPanel() {
+    const finalLevel = this.levelIndex >= LEVELS.length - 1;
+    const panel = this.add.container(this.scale.width / 2, this.scale.height / 2).setScrollFactor(0).setDepth(100);
+    const backdrop = this.add.rectangle(0, 0, 470, 270, 0x090d28, 0.97).setStrokeStyle(2, 0x8b7aff, 1);
+    panel.add(backdrop);
+    panel.add(this.add.text(0, -83, finalLevel ? "ЦИКЛ РАЗОМКНУТ" : "УРОВЕНЬ ПРОЙДЕН", {
+      fontFamily: "Nunito, sans-serif", fontSize: "25px", fontStyle: "900", color: "#dffaff"
+    }).setOrigin(0.5));
+    panel.add(this.add.text(0, -35, finalLevel ? (this.level.texts?.completion ?? "Ты изменил ход последнего цикла.") : "Арзон и Пуши продолжают путь.", {
+      fontFamily: "Nunito, sans-serif", fontSize: "13px", fontStyle: "800", color: "#aab9e9", align: "center",
+      wordWrap: { width: 390 }
+    }).setOrigin(0.5));
+    const seconds = (this.levelElapsed / 1000).toFixed(1);
+    panel.add(this.add.text(0, 8, "ВРЕМЯ: " + seconds + " СЕК.", {
+      fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "900", color: "#78eaff"
+    }).setOrigin(0.5));
+    const mainLabel = finalLevel ? "ВЕРНУТЬСЯ В МЕНЮ" : "СЛЕДУЮЩИЙ УРОВЕНЬ";
+    this.createPanelButton(panel, 0, 68, 250, 42, mainLabel, () => {
+      if (finalLevel) this.returnToMenu();
+      else this.startLevel(this.levelIndex + 1);
+    });
+    this.createPanelButton(panel, 0, 119, 160, 32, "ПОВТОРИТЬ", () => this.restartLevel(), true);
+    this.cameras.main.fadeIn(180);
+  }
+
+  createPanelButton(parent, x, y, width, height, label, callback, secondary = false) {
+    const graphic = this.add.graphics();
+    graphic.fillStyle(secondary ? 0x20264f : 0x3d48a4, 0.98);
+    graphic.fillRoundedRect(-width / 2, -height / 2, width, height, 9);
+    graphic.lineStyle(1.5, secondary ? 0x6776b8 : 0x8beeff, 0.85);
+    graphic.strokeRoundedRect(-width / 2, -height / 2, width, height, 9);
+    const text = this.add.text(x, y, label, {
+      fontFamily: "Nunito, sans-serif", fontSize: secondary ? "10px" : "13px",
+      fontStyle: "900", color: "#f3fcff"
+    }).setOrigin(0.5);
+    graphic.setPosition(x, y);
+    const zone = this.add.zone(x, y, width, height).setInteractive({ useHandCursor: true });
+    zone.on("pointerdown", pointer => {
+      if (pointer.button !== 0 || this.transitioning) return;
+      this.unlockAudio();
+      callback();
+    });
+    zone.on("pointerover", () => text.setColor("#83efff"));
+    zone.on("pointerout", () => text.setColor("#f3fcff"));
+    parent.add([graphic, text, zone]);
+  }
+
+  unlockAudio() {
+    const result = this.soundFX?.unlock?.();
+    if (result?.catch) result.catch(error => console.warn("[LOOP] Audio unlock failed:", error));
+  }
+
+  restartLevel() {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    this.cameras.main.fadeOut(260, 7, 7, 20);
+    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.restart({ levelIndex: this.levelIndex }));
+  }
+
+  startLevel(levelIndex) {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    this.cameras.main.fadeOut(380, 7, 7, 20);
+    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("GameScene", { levelIndex }));
+  }
+
+  returnToMenu() {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    this.cameras.main.fadeOut(350, 7, 7, 20);
+    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.start("MenuScene"));
+  }
+
+  handleShutdown() {
+    this.soundFX?.stopAmbient?.();
+    for (const [event, handler] of this.cleanupHandlers) this.input.off(event, handler, this);
+    this.cleanupHandlers.length = 0;
+    if (this.input.keyboard && this.keyboardJumpHandler) this.input.keyboard.off("keydown", this.keyboardJumpHandler);
+    this.pointerOwners.clear();
+    this.platformColliders?.forEach(collider => collider?.destroy());
+    this.bridges?.forEach(item => item.collider?.destroy());
+    this.keys = null;
+    this.player = null;
+    this.playerVisual = null;
+    this.soundFX = null;
+  }
+}
