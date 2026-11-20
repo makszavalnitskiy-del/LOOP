@@ -970,12 +970,15 @@ export class GameScene extends Phaser.Scene {
       if (!item.fixed) continue;
       item.fixed = false;
       item.fixedShadow = null;
+      item.shadow = null;
       item.active = false;
       item.material = 0;
       if (item.bridge?.body) item.bridge.body.enable = false;
       item.bridge?.setFillStyle(0x69eaff, 0.08).setStrokeStyle(2, 0x83f1ff, 0.12).setAlpha(0.06);
       item.glow?.setFillStyle(0x45dfff, 0.05).setAlpha(0.02);
     }
+    this.shadowGraphics?.clear();
+    this.rayGraphics?.clear();
     this.enteredBridges?.clear();
     this.crossedBridges?.clear();
   }
