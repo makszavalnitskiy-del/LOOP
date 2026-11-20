@@ -210,6 +210,7 @@ export class AwakeningScene extends Phaser.Scene {
     this.player.setVelocityX(left ? -230 : right ? 230 : 0);
     if ((Phaser.Input.Keyboard.JustDown(this.keys.W) || Phaser.Input.Keyboard.JustDown(this.keys.UP) || Phaser.Input.Keyboard.JustDown(this.keys.SPACE) || this.mobileInput.jump) && this.player.body.blocked.down) {
       this.player.setVelocityY(-430);
+      this.mobileInput.jump = false;
     }
     this.playerVisual.setPosition(this.player.x, this.player.y);
     this.playerVisual.setScale(this.player.body.velocity.x < 0 ? -1 : 1, 1);
