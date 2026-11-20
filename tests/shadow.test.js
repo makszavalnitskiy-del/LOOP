@@ -10,11 +10,11 @@ const scene = {
 };
 
 test("light aimed from the marked zone creates a bridge across the gap", () => {
-  const shadow = ShadowProjection.calculate({ ...scene, lightX: 100, lightY: 200 });
+  const shadow = ShadowProjection.calculate({ ...scene, lightX: 140, lightY: 200 });
   assert.equal(shadow.active, true);
-  assert.ok(shadow.width >= 180);
-  assert.ok(shadow.x <= 434);
-  assert.ok(shadow.x + shadow.width >= 619);
+  assert.ok(shadow.width >= 219);
+  assert.ok(shadow.x <= 400);
+  assert.ok(shadow.x + shadow.width >= 620);
 });
 
 test("light in the starting position does not create a bridge", () => {
