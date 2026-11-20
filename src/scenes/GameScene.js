@@ -979,7 +979,9 @@ export class GameScene extends Phaser.Scene {
     }).setDepth(35);
     this.time.delayedCall(650, () => particles.destroy());
     this.time.delayedCall(850, () => {
-      if (this.scene.isActive()) this.scene.restart({ levelIndex: this.levelIndex });
+      if (this.scene.isActive()) this.scene.restart({
+        levelIndex: this.levelIndex, newCyclePlus: this.newCyclePlus, runTimeMs: this.runTimeMs
+      });
     });
   }
 
@@ -1221,7 +1223,9 @@ export class GameScene extends Phaser.Scene {
     if (this.transitioning) return;
     this.transitioning = true;
     this.cameras.main.fadeOut(260, 7, 7, 20);
-    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.restart({ levelIndex: this.levelIndex }));
+    this.cameras.main.once("camerafadeoutcomplete", () => this.scene.restart({
+      levelIndex: this.levelIndex, newCyclePlus: this.newCyclePlus, runTimeMs: this.runTimeMs
+    }));
   }
 
   startLevel(levelIndex) {
