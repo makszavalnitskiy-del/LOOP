@@ -70,8 +70,8 @@ export class AwakeningScene extends Phaser.Scene {
     this.pushi.add(pet);
 
     // Draggable lamp and its light pool.
-    this.lampGlow = this.add.circle(300, 350, 78, 0x55dfff, .09);
-    this.lamp = this.add.container(300, 350);
+    this.lampGlow = this.add.circle(180, 350, 78, 0x55dfff, .09);
+    this.lamp = this.add.container(180, 350);
     const lampArt = this.add.graphics();
     lampArt.fillStyle(0x55eaff, .18); lampArt.fillCircle(0, 0, 30);
     lampArt.fillStyle(0x9bf7ff, 1); lampArt.fillCircle(0, 0, 12);
