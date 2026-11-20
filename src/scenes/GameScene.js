@@ -36,6 +36,8 @@ export class GameScene extends Phaser.Scene {
     this.transitioning = false;
     this.levelElapsed = 0;
     this.levelStartTime = 0;
+    this.paused = false;
+    this.pauseOverlay = null;
     this.cleanupHandlers = [];
   }
 
@@ -68,6 +70,7 @@ export class GameScene extends Phaser.Scene {
     this.createBackdrop();
     this.createWorldGeometry();
     this.createObstacles();
+    this.createSensors();
     this.createLamp();
     this.createPlayer();
     this.createCompanion();
@@ -334,7 +337,8 @@ export class GameScene extends Phaser.Scene {
     this.hud.add(this.objectiveText);
     this.createHudButton(width - 278, 30, 76, 30, "РЕСТАРТ", () => this.restartLevel());
     this.createHudButton(width - 190, 30, 68, 30, "МЕНЮ", () => this.returnToMenu());
-    this.muteHudButton = this.createHudButton(width - 112, 30, 90, 30, this.getMuteLabel(), () => {
+    this.createHudButton(width - 112, 30, 76, 30, "ПАУЗА", () => this.togglePause());
+    this.muteHudButton = this.createHudButton(width - 28, 30, 70, 30, this.getMuteLabel(), () => {
       this.soundFX?.toggleMute?.();
       this.muteHudButton?.label.setText(this.getMuteLabel());
     });
@@ -374,7 +378,7 @@ export class GameScene extends Phaser.Scene {
       }).setOrigin(0.5).setScrollFactor(0).setDepth(52);
       const zone = this.add.zone(x, y, width, width).setInteractive().setScrollFactor(0).setDepth(53);
       zone.on("pointerdown", pointer => {
-        if (this.transitioning || this.dead || this.completed) return;
+        if (this.transitioning || this.dead || this.completed || this.paused) return;
         this.unlockAudio();
         this.pointerOwners.set(pointer.id, action);
         if (action === "jump") this.queueJump();
@@ -448,6 +452,8 @@ export class GameScene extends Phaser.Scene {
       if ([32, 38, 87].includes(event.keyCode)) this.queueJump();
     };
     this.input.keyboard.on("keydown", this.keyboardJumpHandler);
+    this.keyboardPauseHandler = event => { if (event.key === "Escape") { event.preventDefault(); this.togglePause(); } };
+    this.input.keyboard.on("keydown", this.keyboardPauseHandler);
   }
 
   queueJump() {
@@ -467,6 +473,95 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  createSensors() {
+    this.sensorObjects = [];
+    for (const data of this.level.sensors ?? []) {
+      const color = data.color ?? 0x9d83ff;
+      const visual = this.add.circle(data.x + data.width / 2, data.y + data.height / 2, Math.min(data.width, data.height) * 0.48, color, 0.18).setStrokeStyle(2, color, 0.85).setDepth(9);
+      const ring = this.add.circle(visual.x, visual.y, Math.min(data.width, data.height) * 0.68, color, 0).setStrokeStyle(1, 0xc9baff, 0.45).setDepth(9);
+      this.sensorObjects.push({ data, visual, ring, elapsed: 0, activated: false });
+    }
+  }
+
+  updateSensors(delta) {
+    for (const sensor of this.sensorObjects ?? []) {
+      if (sensor.activated) continue;
+      const polygon = this.bridges.map(item => item.shadow?.polygon ?? []).find(points => points.length >= 3 && Phaser.Geom.Polygon.Contains(new Phaser.Geom.Polygon(points.map(point => new Phaser.Geom.Point(point.x, point.y))), sensor.visual.x, sensor.visual.y));
+      sensor.elapsed = polygon ? sensor.elapsed + delta : 0;
+      const progress = Phaser.Math.Clamp(sensor.elapsed / sensor.data.requiredHold, 0, 1);
+      sensor.visual.setFillStyle(sensor.data.color ?? 0x9d83ff, 0.18 + progress * 0.55);
+      sensor.ring.setScale(1 + progress * 0.3);
+      if (progress >= 1) {
+        sensor.activated = true;
+        sensor.visual.setFillStyle(0x76ffd7, 0.85);
+        sensor.ring.setStrokeStyle(2, 0x76ffd7, 0.9);
+        const target = this.obstacles.find(item => item.data.id === sensor.data.targetObstacleId);
+        if (target) {
+          target.open = true;
+          target.art.setAlpha(0.12);
+          target.core.setAlpha(0.05);
+          target.halo.setAlpha(0.02);
+          if (target.physicsBody) target.physicsBody.enable = false;
+        }
+        this.soundFX?.playCrystal?.();
+      }
+    }
+  }
+
+  ejectPlayerFromBridge(item) {
+    const body = this.player?.body;
+    if (!body) return;
+    const overlapsX = body.right > item.gap.x && body.left < item.gap.x + item.gap.width;
+    const bridgeTop = this.worldGroundY - 11;
+    const overlapsY = body.bottom > bridgeTop && body.top < this.worldGroundY + 8;
+    if (overlapsX && overlapsY && body.velocity.y >= 0) {
+      this.player.y = bridgeTop - body.height / 2;
+      body.updateFromGameObject();
+      body.setVelocityY(0);
+      this.wasGrounded = true;
+    }
+  }
+
+  togglePause() {
+    if (this.dead || this.completed || this.transitioning) return;
+    if (this.paused) { this.closePause(); return; }
+    this.paused = true;
+    this.physics.world.pause();
+    this.tweens.pauseAll();
+    const panel = this.add.container(this.scale.width / 2, this.scale.height / 2).setScrollFactor(0).setDepth(120);
+    this.pauseOverlay = panel;
+    const width = Math.min(430, this.scale.width - 32);
+    panel.add(this.add.rectangle(0, 0, width, Math.min(430, this.scale.height - 28), 0x080b22, 0.985).setStrokeStyle(2, 0x8b7aff, 1));
+    panel.add(this.add.text(0, -174, "ПАУЗА", { fontFamily: "Nunito, sans-serif", fontSize: "25px", fontStyle: "900", color: "#e7faff" }).setOrigin(.5));
+    this.createPauseButton(panel, 0, -112, "ПРОДОЛЖИТЬ", () => this.closePause(), width - 64);
+    this.createPauseButton(panel, 0, -62, "ПЕРЕЗАПУСТИТЬ УРОВЕНЬ", () => this.restartLevel(), width - 64);
+    this.createPauseButton(panel, 0, -12, "ГРОМКОСТЬ SFX / МУЗЫКИ  −", () => this.soundFX?.setMasterVolume?.(Math.max(0.03, (this.soundFX.getMasterVolume?.() ?? 0.24) - 0.03)), width - 64);
+    this.createPauseButton(panel, 0, 34, "ГРОМКОСТЬ SFX / МУЗЫКИ  +", () => this.soundFX?.setMasterVolume?.(Math.min(0.4, (this.soundFX.getMasterVolume?.() ?? 0.24) + 0.03)), width - 64);
+    this.createPauseButton(panel, 0, 82, "ПОЛНЫЙ ЭКРАН", () => { if (this.scale.isFullscreen) this.scale.stopFullscreen(); else this.scale.startFullscreen(); }, width - 64);
+    this.createPauseButton(panel, 0, 132, "В ГЛАВНОЕ МЕНЮ", () => this.returnToMenu(), width - 64);
+  }
+
+  createPauseButton(parent, x, y, label, callback, width) {
+    const graphic = this.add.graphics();
+    graphic.fillStyle(0x252d68, 0.98);
+    graphic.fillRoundedRect(-width / 2, -18, width, 36, 8);
+    graphic.lineStyle(1, 0x7c9cff, 0.8);
+    graphic.strokeRoundedRect(-width / 2, -18, width, 36, 8);
+    const text = this.add.text(x, y, label, { fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "900", color: "#effaff" }).setOrigin(.5);
+    const zone = this.add.zone(x, y, width, 36).setInteractive({ useHandCursor: true });
+    zone.on("pointerdown", callback);
+    parent.add([graphic.setPosition(x, y), text, zone]);
+  }
+
+  closePause() {
+    if (!this.paused) return;
+    this.paused = false;
+    this.pauseOverlay?.destroy(true);
+    this.pauseOverlay = null;
+    this.tweens.resumeAll();
+    this.physics.world.resume();
+  }
+
   createLevelIntro() {
     const title = this.add.text(this.scale.width / 2, 135, this.level.texts?.intro ?? this.level.title.toUpperCase(), {
       fontFamily: "Nunito, sans-serif", fontSize: "24px", fontStyle: "900", color: "#dffaff",
@@ -475,7 +570,8 @@ export class GameScene extends Phaser.Scene {
     const subtitle = this.add.text(this.scale.width / 2, 169, this.level.subtitle ?? "", {
       fontFamily: "Nunito, sans-serif", fontSize: "12px", fontStyle: "800", color: "#9eaddc"
     }).setOrigin(0.5).setScrollFactor(0).setDepth(60);
-    this.tweens.add({ targets: [title, subtitle], alpha: 0, delay: 1900, duration: 650, onComplete: () => { title.destroy(); subtitle.destroy(); } });
+    const lore = this.add.text(this.scale.width / 2, 199, this.level.lore ?? "", { fontFamily: "Nunito, sans-serif", fontSize: "10px", fontStyle: "700", color: "#8c9ed0", align: "center", wordWrap: { width: this.scale.width - 48 } }).setOrigin(.5).setScrollFactor(0).setDepth(60);
+    this.tweens.add({ targets: [title, subtitle, lore], alpha: 0, delay: 4200, duration: 900, onComplete: () => { title.destroy(); subtitle.destroy(); lore.destroy(); } });
   }
 
   updatePatrols(delta) {
@@ -537,7 +633,7 @@ export class GameScene extends Phaser.Scene {
       item.material = Phaser.Math.Linear(item.material ?? 0, material, 0.24);
       const wasActive = item.active;
       item.active = shadow.active;
-      if (shadow.active && !wasActive) this.soundFX?.playBridge?.();
+      if (shadow.active && !wasActive) { this.ejectPlayerFromBridge(item); this.soundFX?.playBridge?.(); }
       else if (!shadow.active && wasActive) this.soundFX?.playBridgeFade?.();
       item.bridge.body.enable = shadow.active;
       if (shadow.width > 0 && shadow.polygon.length) {
@@ -567,11 +663,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    if (!this.player || this.dead || this.completed || this.transitioning) return;
+    if (!this.player || this.dead || this.completed || this.transitioning || this.paused) return;
     const safeDelta = Math.min(delta || 16.67, 40);
     this.levelElapsed += safeDelta;
     this.updatePatrols(safeDelta);
     this.updateAllBridges();
+    this.updateSensors(safeDelta);
     this.updatePlayerMovement(time);
     this.updateCharacterVisuals(time);
     this.updateLightAtmosphere(time);
@@ -751,7 +848,8 @@ export class GameScene extends Phaser.Scene {
     const bounds = this.player.getBounds();
     if (Phaser.Geom.Intersects.RectangleToRectangle(bounds, this.portalBounds)) {
       const allBridgesActive = this.bridges.length > 0 && this.bridges.every(item => item.active);
-      if (allBridgesActive) this.completeLevel();
+      const gatesOpen = this.obstacles.filter(item => item.data.type === "barrier" && item.data.sensorId).every(item => item.open);
+      if (allBridgesActive && gatesOpen) this.completeLevel();
     }
   }
 
@@ -767,13 +865,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   saveProgress() {
-    const nextUnlocked = Math.min(LEVELS.length, this.level.id + 1);
-    const record = {
-      level: nextUnlocked,
-      lastCompletedLevel: this.level.id,
-      completedLevels: this.level.id,
-      updatedAt: Date.now()
-    };
+    let previous = {};
+    try { previous = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}"); } catch {}
+    const nextUnlocked = Math.min(LEVELS.length, Math.max(Number(previous.level) || 1, this.level.id + 1));
+    const bestTimes = { ...(previous.bestTimes || {}) };
+    const seconds = Number((this.levelElapsed / 1000).toFixed(2));
+    if (!bestTimes[this.level.id] || seconds < bestTimes[this.level.id]) bestTimes[this.level.id] = seconds;
+    const completedLevelsList = [...new Set([...(previous.completedLevelsList || []), this.level.id])];
+    const record = { level: nextUnlocked, lastCompletedLevel: this.level.id, completedLevels: Math.max(Number(previous.completedLevels) || 0, this.level.id), completedLevelsList, bestTimes, updatedAt: Date.now() };
     try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(record)); }
     catch (error) { console.warn("[LOOP] Не удалось сохранить прогресс:", error); }
   }
@@ -860,6 +959,7 @@ export class GameScene extends Phaser.Scene {
     for (const [event, handler] of this.cleanupHandlers) this.input.off(event, handler, this);
     this.cleanupHandlers.length = 0;
     if (this.input.keyboard && this.keyboardJumpHandler) this.input.keyboard.off("keydown", this.keyboardJumpHandler);
+    if (this.input.keyboard && this.keyboardPauseHandler) this.input.keyboard.off("keydown", this.keyboardPauseHandler);
     this.pointerOwners.clear();
     this.platformColliders?.forEach(collider => collider?.destroy());
     this.bridges?.forEach(item => item.collider?.destroy());
