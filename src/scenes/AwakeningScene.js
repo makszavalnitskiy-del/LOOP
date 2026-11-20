@@ -25,6 +25,56 @@ export class AwakeningScene extends Phaser.Scene {
       ruins.strokeRect(x + 9, 350 - (i % 2) * 45, 28, 90);
     });
 
+    // Layered ruins and crystal growths add depth without interfering with collision geometry.
+    const farRuins = this.add.graphics().setDepth(1);
+    farRuins.fillStyle(0x171a43, .52);
+    farRuins.fillPoints([
+      new Phaser.Geom.Point(0,350), new Phaser.Geom.Point(75,305),
+      new Phaser.Geom.Point(135,350), new Phaser.Geom.Point(205,292),
+      new Phaser.Geom.Point(270,350), new Phaser.Geom.Point(355,315),
+      new Phaser.Geom.Point(430,350), new Phaser.Geom.Point(525,300),
+      new Phaser.Geom.Point(620,350), new Phaser.Geom.Point(710,312),
+      new Phaser.Geom.Point(795,350), new Phaser.Geom.Point(885,298),
+      new Phaser.Geom.Point(960,350), new Phaser.Geom.Point(960,470),
+      new Phaser.Geom.Point(0,470)
+    ], true);
+    const architecture = this.add.graphics().setDepth(2);
+    architecture.lineStyle(3, 0x555a9d, .35);
+    [[24,322,92,462],[860,305,932,460],[172,345,190,460],[770,350,790,460]].forEach(([x1,y1,x2,y2]) => {
+      architecture.lineBetween(x1,y1,x1,y2);
+      architecture.lineBetween(x1,y1,x2,y1);
+      architecture.lineBetween(x2,y1,x2,y2);
+    });
+    architecture.lineStyle(1, 0x69eaff, .24);
+    [48,72,884,908].forEach(x => architecture.lineBetween(x,360,x,420));
+
+    const crystalArt = this.add.graphics().setDepth(4);
+    const drawCrystal = (x,y,s=1) => {
+      crystalArt.fillStyle(0x36dfff,.12);
+      crystalArt.fillCircle(x,y-10*s,18*s);
+      crystalArt.fillStyle(0x246cba,.92);
+      crystalArt.fillPoints([
+        new Phaser.Geom.Point(x,y-22*s), new Phaser.Geom.Point(x+9*s,y-7*s),
+        new Phaser.Geom.Point(x+5*s,y+8*s), new Phaser.Geom.Point(x-6*s,y+8*s),
+        new Phaser.Geom.Point(x-10*s,y-7*s)
+      ],true);
+      crystalArt.lineStyle(1.5,0x9af7ff,.85);
+      crystalArt.lineBetween(x,y-22*s,x+5*s,y+8*s);
+    };
+    drawCrystal(72,486,.8); drawCrystal(365,482,.55);
+    drawCrystal(755,486,.75); drawCrystal(900,486,.5);
+
+    const floorDetails = this.add.graphics().setDepth(3);
+    floorDetails.lineStyle(2,0x747bd0,.48);
+    floorDetails.lineBetween(0,500,400,500);
+    floorDetails.lineBetween(620,500,960,500);
+    floorDetails.lineStyle(1,0x49dff5,.22);
+    [34,118,222,322,670,748,852,930].forEach(x => {
+      floorDetails.lineBetween(x,516,x+28,516);
+      floorDetails.fillStyle(0x69eaff,.38);
+      floorDetails.fillCircle(x+14,516,1.5);
+    });
+
     // Create each floor body exactly once. Adding an already-enabled body to a
     // StaticPhysicsGroup can attempt to enable it a second time on some Phaser builds.
     const leftFloor = this.add.rectangle(200, 548, 400, 104, 0x242653).setStrokeStyle(2, 0x5966b4, .8);
