@@ -199,9 +199,20 @@ class YandexSDKManager {
     this.progress = merged;
     try { getStorage()?.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch {}
     if (this.player?.setData) {
-      try { await this.player.setData({ [STORAGE_KEY]: merged }, { flush: true }); } catch {}
+      try { await this.player.setData({ [STORAGE_KEY]: merged }, true); } catch {}
     }
     return clone(merged);
+  }
+
+  async loadSettings() {
+    const settings = parseJSON(getStorage()?.getItem("loop-settings-v1"), {});
+    return settings && typeof settings === "object" ? clone(settings) : {};
+  }
+
+  async saveSettings(settings = {}) {
+    const safeSettings = settings && typeof settings === "object" ? settings : {};
+    try { getStorage()?.setItem("loop-settings-v1", JSON.stringify(safeSettings)); } catch {}
+    return clone(safeSettings);
   }
 
   async submitLeaderboardScore(totalTimeSeconds) {
