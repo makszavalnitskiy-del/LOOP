@@ -1,10 +1,11 @@
 {
   "name": "loop-last-cycle",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
-    "check": "node --check src/main.js && node --check src/audio/SoundFX.js && node --check src/data/levels.js && node --check src/scenes/BootScene.js && node --check src/scenes/MenuScene.js && node --check src/scenes/AwakeningScene.js && node --check src/scenes/GameScene.js && node --check src/mechanics/shadows/ShadowProjection.js",
-    "test": "node --test"
+    "check": "node scripts/check-project.js",
+    "test": "node --test",
+    "build:yandex": "node scripts/build-yandex.js"
   }
 }
