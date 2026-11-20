@@ -218,9 +218,9 @@ export class GameScene extends Phaser.Scene {
       this.obstacles.push(obstacle);
       if (data.type === "crystal") {
         const bridgeNumber = Number(String(data.bridgeId ?? "").match(/(\d+)$/)?.[1]);
-        const gap = Number.isInteger(bridgeNumber) && bridgeNumber > 0
-          ? this.gaps[bridgeNumber - 1]
-          : this.gaps[crystals.indexOf(data)];
+        const gap = this.gaps.find(item => item.bridgeId === data.bridgeId) ??
+          (Number.isInteger(bridgeNumber) && bridgeNumber > 0 ? this.gaps[bridgeNumber - 1] : null) ??
+          this.gaps[crystals.indexOf(data)];
         if (gap) this.createBridge(data, gap);
       }
     }
