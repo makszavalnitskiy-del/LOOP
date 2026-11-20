@@ -25,13 +25,12 @@ export class AwakeningScene extends Phaser.Scene {
       ruins.strokeRect(x + 9, 350 - (i % 2) * 45, 28, 90);
     });
 
-    this.platforms = this.physics.add.staticGroup();
+    // Create each floor body exactly once. Adding an already-enabled body to a
+    // StaticPhysicsGroup can attempt to enable it a second time on some Phaser builds.
     const leftFloor = this.add.rectangle(200, 548, 400, 104, 0x242653).setStrokeStyle(2, 0x5966b4, .8);
     const rightFloor = this.add.rectangle(790, 548, 340, 104, 0x242653).setStrokeStyle(2, 0x5966b4, .8);
     this.physics.add.existing(leftFloor, true);
     this.physics.add.existing(rightFloor, true);
-    this.platforms.add(leftFloor);
-    this.platforms.add(rightFloor);
 
     // Floating crystal blocks the light and casts a real geometric shadow onto the gap.
     this.occluder = { x: 280, y: 360, width: 120, height: 60 };
@@ -60,7 +59,8 @@ export class AwakeningScene extends Phaser.Scene {
     this.player.setGravityY(900);
     this.player.setBounce(0);
     this.player.setAlpha(0);
-    this.physics.add.collider(this.player, this.platforms);
+    this.physics.add.collider(this.player, leftFloor);
+    this.physics.add.collider(this.player, rightFloor);
     this.bridgeCollider = this.physics.add.collider(this.player, this.bridge);
 
     // Illustrated, high-resolution character artwork replaces the temporary primitive drawings.
