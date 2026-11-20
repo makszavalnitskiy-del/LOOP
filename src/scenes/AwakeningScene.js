@@ -59,34 +59,19 @@ export class AwakeningScene extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
     this.player.setGravityY(900);
     this.player.setBounce(0);
+    this.player.setAlpha(0);
     this.physics.add.collider(this.player, this.platforms);
     this.bridgeCollider = this.physics.add.collider(this.player, this.bridge);
-    this.playerVisual = this.add.container(this.player.x, this.player.y);
-    const flame = this.add.graphics();
-    flame.fillStyle(0x43dfff, .22); flame.fillEllipse(0, 2, 54, 60);
-    flame.fillStyle(0x153a9a, .95); flame.fillTriangle(-10, -12, -7, -31, 2, -12);
-    flame.fillStyle(0x1768cf, .98); flame.fillTriangle(0, -12, 8, -34, 12, -9);
-    flame.fillStyle(0x54dfff, 1); flame.fillEllipse(0, 0, 30, 38);
-    flame.fillStyle(0x8df4ff, .95); flame.fillEllipse(0, 7, 18, 24);
-    flame.fillStyle(0xffffff, 1); flame.fillEllipse(-6, -3, 8, 10); flame.fillEllipse(6, -3, 8, 10);
-    flame.fillStyle(0x8d55ff, 1); flame.fillCircle(-6, -3, 3.5); flame.fillCircle(6, -3, 3.5);
-    flame.fillStyle(0x25185d, 1); flame.fillCircle(-6, -3, 1.5); flame.fillCircle(6, -3, 1.5);
-    flame.fillStyle(0xd9fbff, 1); flame.fillCircle(0, 15, 4);
-    this.playerVisual.add(flame);
 
-    // Pushi, the little fox-cat companion.
-    this.pushi = this.add.container(65, 490);
-    const pet = this.add.graphics();
-    pet.fillStyle(0x8c55d8, .22); pet.fillEllipse(0, 5, 45, 30);
-    pet.fillStyle(0x35205f, 1); pet.fillEllipse(0, 0, 30, 24);
-    pet.fillTriangle(-12, -8, -10, -25, 0, -10);
-    pet.fillTriangle(4, -10, 15, -25, 15, -5);
-    pet.fillStyle(0xffffff, 1); pet.fillCircle(-6, -2, 4); pet.fillCircle(7, -2, 4);
-    pet.fillStyle(0x9b62ff, 1); pet.fillCircle(-6, -2, 2.5); pet.fillCircle(7, -2, 2.5);
-    pet.fillStyle(0x24153f, 1); pet.fillCircle(-6, -2, 1); pet.fillCircle(7, -2, 1);
-    pet.lineStyle(5, 0xb66cff, 1); pet.beginPath(); pet.arc(17, 5, 14, -.8, .8, false); pet.strokePath();
-    pet.lineStyle(2, 0x6cf3ff, .9); pet.strokeCircle(29, 8, 5);
-    this.pushi.add(pet);
+    // Illustrated, high-resolution character artwork replaces the temporary primitive drawings.
+    this.playerVisual = this.add.container(this.player.x, this.player.y);
+    const arzonSprite = this.add.image(0, -9, "arzon").setDisplaySize(88, 96);
+    this.playerVisual.add(arzonSprite);
+    this.tweens.add({ targets: arzonSprite, scaleY: { from: .365, to: .385 }, duration: 780, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+
+    // Pushi is a separate illustrated fox-cat companion with its signature luminous tail ring.
+    this.pushi = this.add.image(65, 490, "pushi").setDisplaySize(92, 92);
+    this.tweens.add({ targets: this.pushi, angle: { from: -2, to: 2 }, y: { from: 486, to: 492 }, duration: 1150, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
 
     // Draggable lamp and its light pool.
     this.lampGlow = this.add.circle(500, 250, 78, 0x55dfff, .09);
@@ -212,10 +197,10 @@ export class AwakeningScene extends Phaser.Scene {
       this.player.setVelocityY(-430);
       this.mobileInput.jump = false;
     }
-    this.playerVisual.setPosition(this.player.x, this.player.y);
+    this.playerVisual.setPosition(this.player.x, this.player.y + Math.sin(this.time.now / 170) * 2);
     this.playerVisual.setScale(this.player.body.velocity.x < 0 ? -1 : 1, 1);
     this.pushi.x = Phaser.Math.Linear(this.pushi.x, this.player.x - 48, .08);
-    this.pushi.y = 490 + Math.sin(this.time.now / 220) * 4;
+    this.pushi.setPosition(this.player.x - 48, 490 + Math.sin(this.time.now / 220) * 4);
     if (this.player.x > 790 && this.player.y > 390 && this.bridgeActive) {
       this.levelComplete = true;
       this.player.setVelocity(0, 0);
