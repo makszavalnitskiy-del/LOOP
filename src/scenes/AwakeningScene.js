@@ -142,10 +142,10 @@ export class AwakeningScene extends Phaser.Scene {
     this.add.text(510, 565, "ПЕРЕТАЩИ ЛАМПУ МЫШЬЮ", { fontFamily: "Nunito", fontSize: "12px", fontStyle: "900", color: "#65eaff" }).setOrigin(.5);
     this.message = this.add.text(480, 135, "Найди положение света, чтобы тень стала мостом", { fontFamily: "Nunito", fontSize: "15px", fontStyle: "800", color: "#a9f5ff", backgroundColor: "#101631aa", padding: { x: 14, y: 9 } }).setOrigin(.5);
     this.add.text(480, 170, "НАПРАВЬ СВЕТ НА КРИСТАЛЛ, ЧТОБЫ СПРОЕЦИРОВАТЬ ТЕНЬ", { fontFamily: "Nunito", fontSize: "10px", fontStyle: "900", color: "#707da9", letterSpacing: 2 }).setOrigin(.5);
-    this.zone = this.add.circle(100, 200, 52).setStrokeStyle(2, 0x61eaff, .3).setFillStyle(0x61eaff, .035);
+    this.zone = this.add.circle(140, 200, 52).setStrokeStyle(2, 0x61eaff, .3).setFillStyle(0x61eaff, .035);
     this.tweens.add({ targets: this.zone, alpha: { from: .35, to: .9 }, duration: 900, yoyo: true, repeat: -1 });
-    this.zone.setPosition(100, 200);
-    this.add.text(100, 270, "ЗОНА СВЕТА", { fontFamily: "Nunito", fontSize: "10px", fontStyle: "900", color: "#5bdff5" }).setOrigin(.5);
+    this.zone.setPosition(140, 200);
+    this.add.text(140, 270, "ЗОНА СВЕТА", { fontFamily: "Nunito", fontSize: "10px", fontStyle: "900", color: "#5bdff5" }).setOrigin(.5);
 
     this.physics.world.setBounds(0, 0, W, H);
     this.updateBridge();
