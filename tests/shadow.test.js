@@ -131,6 +131,7 @@ test("every gap on every level has an explicitly linked crystal", () => {
   for (const level of LEVELS) {
     assert.equal(crystalsFor(level).length, level.gaps.length, `level ${level.id} crystal count`);
     for (let index = 0; index < level.gaps.length; index++) {
+      const gap = level.gaps[index];
       const crystal = crystalForGap(level, index);
       assert.ok(gap.bridgeId, `level ${level.id} gap ${gap.id} must declare bridgeId`);
       assert.ok(crystal, `level ${level.id} gap ${gap.id} must map to ${gap.bridgeId}`);
