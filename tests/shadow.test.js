@@ -95,9 +95,9 @@ test("shadow polygon intersects a sensor rectangle even when its center is outsi
   assert.equal(ShadowProjection.intersectsRect([], { x: 0, y: 0, width: 5, height: 5 }), false);
 });
 
-test("all six levels have valid platform, gap, spawn, lamp and portal geometry", () => {
-  assert.equal(getLevelCount(), 6);
-  assert.deepEqual(LEVELS.map(level => level.id), [1, 2, 3, 4, 5, 6]);
+test("all twenty levels have valid platform, gap, spawn, lamp and portal geometry", () => {
+  assert.equal(getLevelCount(), 20);
+  assert.deepEqual(LEVELS.map(level => level.id), Array.from({ length: 20 }, (_, index) => index + 1));
   for (const level of LEVELS) {
     assert.ok(level.key && level.title && level.lore, `level ${level.id} metadata`);
     assert.ok(level.world.width > 0 && level.world.height > 0);
@@ -197,9 +197,61 @@ test("moving obstacle patrols remain inside their declared ranges", () => {
   }
 });
 
-test("level navigation helpers cover all six levels", () => {
+test("level navigation helpers cover all twenty levels", () => {
   assert.equal(getLevelById(6)?.key, "last-cycle");
-  assert.equal(getLevelById(7), null);
-  assert.equal(getNextLevelId(5), 6);
-  assert.equal(getNextLevelId(6), null);
+  assert.equal(getLevelById(20)?.key, "final-cycle");
+  assert.equal(getLevelById(21), null);
+  assert.equal(getNextLevelId(19), 20);
+  assert.equal(getNextLevelId(20), null);
+});
+
+
+test("all twenty levels provide mathematical lamp hints inside lampBounds", () => {
+  assert.equal(LEVELS.length, 20);
+  for (const level of LEVELS) {
+    const hints = level.hintSteps ?? (level.hintPosition ? [{ ...level.hintPosition, action: "build-bridge", gapId: level.gaps[0].id }] : []);
+    assert.ok(hints.length >= level.gaps.length + (level.sensors?.length ?? 0), `level ${level.id}: missing ordered hint steps`);
+    for (const hint of hints) {
+      assert.ok(ShadowProjection.isPointInsideBounds(hint, level.lampBounds), `level ${level.id}: hint outside lampBounds`);
+    }
+    for (const gap of level.gaps) {
+      const hint = hints.find(item => item.action === "build-bridge" && item.gapId === gap.id);
+      const crystal = crystalForGap(level, level.gaps.indexOf(gap));
+      assert.ok(hint, `level ${level.id}: missing hint for ${gap.id}`);
+      const projection = ShadowProjection.calculate({
+        lightX: hint.x, lightY: hint.y,
+        obstacle: { x: crystal.x, y: crystal.y, width: crystal.width, height: crystal.height },
+        groundY: level.world.groundY, gapStart: gap.x, gapEnd: gap.x + gap.width
+      });
+      assert.equal(projection.active, true, `level ${level.id}, ${gap.id}: hint does not fully form bridge`);
+      assert.ok(projection.coverage >= 1 - 1e-9);
+    }
+    for (const sensor of level.sensors ?? []) {
+      const hint = hints.find(item => item.action === "charge-sensor" && item.sensorId === sensor.id);
+      assert.ok(hint, `level ${level.id}: missing sensor hint ${sensor.id}`);
+      const intersects = crystalsFor(level).some(crystal => {
+        const projection = ShadowProjection.calculate({
+          lightX: hint.x, lightY: hint.y,
+          obstacle: { x: crystal.x, y: crystal.y, width: crystal.width, height: crystal.height },
+          groundY: level.world.groundY, gapStart: 0, gapEnd: level.world.width
+        });
+        return ShadowProjection.intersectsRect(projection.polygon, sensor);
+      });
+      assert.equal(intersects, true, `level ${level.id}: sensor hint does not charge ${sensor.id}`);
+    }
+  }
+});
+
+test("multi-gap crystals explicitly map to gaps and only static crystals request locking", () => {
+  for (const level of LEVELS) {
+    for (const crystal of crystalsFor(level)) {
+      const gap = level.gaps.find(item => item.id === crystal.gapId);
+      assert.ok(gap, `level ${level.id}: crystal ${crystal.id} has invalid gapId`);
+      assert.equal(gap.bridgeId, crystal.bridgeId);
+      if (level.gaps.length > 1) {
+        assert.equal(crystal.lockOnComplete, !crystal.patrol, `level ${level.id}: incorrect lockOnComplete on ${crystal.id}`);
+      }
+      if (crystal.patrol) assert.equal(crystal.lockOnComplete, false);
+    }
+  }
 });
