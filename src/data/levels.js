@@ -1,3 +1,5 @@
+import { ShadowProjection } from "../mechanics/shadows/ShadowProjection.js";
+
 export const LEVELS = [
   {
     id: 1, key: "awakening", title: "Пробуждение", subtitle: "Первый источник света",
@@ -157,6 +159,147 @@ export const LEVELS = [
     mechanics: { lampDraggable: true, lampLimited: true, requireFullBridge: true, movingObstacles: true, multipleCrystals: true, shadowSensors: true, sensorHoldMs: 1500, laserGates: true, finalChallenge: true }
   }
 ];
+
+
+function createAdditionalLevel(config) {
+  const groundY = 496;
+  const gaps = config.gaps.map((gap, index) => ({
+    id: index === 0 ? "first-gap" : index === 1 ? "second-gap" : `gap-${index + 1}`,
+    bridgeId: `bridge-${index + 1}`,
+    x: gap.x,
+    y: groundY,
+    width: gap.width,
+    height: 104
+  }));
+  const worldWidth = gaps[gaps.length - 1].x + gaps[gaps.length - 1].width + 650;
+  const platforms = [];
+  let cursor = 0;
+  for (const gap of gaps) {
+    if (gap.x > cursor) platforms.push({
+      id: platforms.length === 0 ? "start-ground" : `middle-ground-${platforms.length}`,
+      x: cursor, y: groundY, width: gap.x - cursor, height: 104
+    });
+    cursor = gap.x + gap.width;
+  }
+  if (cursor < worldWidth) platforms.push({
+    id: "end-ground", x: cursor, y: groundY, width: worldWidth - cursor, height: 104
+  });
+
+  const obstacles = gaps.map((gap, index) => {
+    const width = config.crystalWidths?.[index] ?? 132;
+    const height = config.crystalHeights?.[index] ?? 74;
+    const y = config.crystalY?.[index] ?? 330;
+    const patrol = config.movingGapIndexes?.includes(index) ? {
+      axis: index % 2 === 0 ? "y" : "x",
+      min: index % 2 === 0 ? y - 32 : gap.x - 100,
+      max: index % 2 === 0 ? y + 32 : gap.x - 35,
+      speed: 54 + (config.id % 4) * 9,
+      start: index % 2 === 0 ? y : gap.x - 100,
+      direction: index % 2 === 0 ? 1 : -1
+    } : null;
+    return {
+      id: `crystal-${index + 1}`, type: "crystal",
+      x: gap.x - Math.min(112, Math.round(width * 0.78)),
+      y, width, height,
+      color: index % 2 === 0 ? 0x70eaff : 0xc18cff,
+      movable: Boolean(patrol), patrol,
+      bridgeId: gap.bridgeId, gapId: gap.id,
+      lockOnComplete: gaps.length > 1 && !patrol
+    };
+  });
+
+  return {
+    id: config.id, key: config.key, title: config.title, subtitle: config.subtitle,
+    description: config.description, lore: config.lore,
+    chapter: Math.ceil(config.id / 5), parTimeSec: config.parTimeSec,
+    world: { width: worldWidth, height: 600, background: config.background ?? 0x0b0a23, groundY },
+    platforms, gaps, obstacles, sensors: [],
+    lampBounds: { minX: 55, maxX: worldWidth - 110, minY: 82, maxY: 340 },
+    lampStart: { x: 125, y: 185 }, playerStart: { x: 90, y: 450 },
+    portal: { x: worldWidth - 150, y: 430, width: 56, height: 66 },
+    texts: {
+      intro: config.title.toUpperCase(),
+      objective: config.objective,
+      crystalHint: "КАЖДЫЙ КРИСТАЛЛ СОЗДАЁТ СВОЮ ТЕНЬ",
+      barrierHint: "СЛЕДИ ЗА ПОЛОЖЕНИЕМ КРИСТАЛЛОВ",
+      completion: "ПУТЬ ЧЕРЕЗ ЦИКЛ ОТКРЫТ"
+    },
+    mechanics: {
+      lampDraggable: true, lampLimited: true, requireFullBridge: true,
+      movingObstacles: obstacles.some(item => item.patrol),
+      multipleCrystals: gaps.length > 1,
+      independentBridges: gaps.length > 1
+    }
+  };
+}
+
+LEVELS.push(
+  createAdditionalLevel({ id: 7, key: "echo", title: "Отголосок", subtitle: "Узкий проход", description: "Пройди через узкий разрыв и найди точное положение света.", lore: "За первой дверью эхо повторило имя Арзона.", objective: "СОЕДИНИ БЕРЕГА", gaps: [{ x: 380, width: 190 }], parTimeSec: 42 }),
+  createAdditionalLevel({ id: 8, key: "blind-zone", title: "Слепая зона", subtitle: "Два источника", description: "Последовательно активируй два независимых кристалла.", lore: "Не всякий свет показывает то, что находится перед ним.", objective: "СОЗДАЙ ДВА МОСТА", gaps: [{ x: 360, width: 210 }, { x: 900, width: 230 }], parTimeSec: 78 }),
+  createAdditionalLevel({ id: 9, key: "pulse", title: "Пульс", subtitle: "Ритм движения", description: "Поймай положение патрулирующего кристалла.", lore: "Мир дышит в такт невидимому сердцу.", objective: "ПОЙМАЙ МОМЕНТ", gaps: [{ x: 390, width: 220 }], movingGapIndexes: [0], parTimeSec: 55 }),
+  createAdditionalLevel({ id: 10, key: "foothold", title: "Точка опоры", subtitle: "Двойная настройка", description: "Закрепи первый мост и перенеси лампу ко второму кристаллу.", lore: "Резонанс научил свет отвечать на точность.", objective: "СОБЕРИ ЦЕПОЧКУ МОСТОВ", gaps: [{ x: 350, width: 220 }, { x: 890, width: 260 }], parTimeSec: 82 }),
+  createAdditionalLevel({ id: 11, key: "pendulum", title: "Маятник", subtitle: "Нестабильный свет", description: "Следи за движущимся кристаллом и выбирай момент перехода.", lore: "Время раскачивает свет, как маятник над бездной.", objective: "ДОЖДИСЬ УСТОЙЧИВОЙ ТЕНИ", gaps: [{ x: 410, width: 245 }], movingGapIndexes: [0], parTimeSec: 58 }),
+  createAdditionalLevel({ id: 12, key: "drift", title: "Смещение", subtitle: "Два независимых участка", description: "Настрой два моста в правильной последовательности.", lore: "Даже неподвижные вещи здесь медленно меняют место.", objective: "СОЕДИНИ ДВА РАЗРЫВА", gaps: [{ x: 370, width: 235 }, { x: 920, width: 275 }], parTimeSec: 88 }),
+  createAdditionalLevel({ id: 13, key: "vanishing-path", title: "Исчезающий путь", subtitle: "Временный мост", description: "Создай мост от патрулирующего кристалла и не задерживайся.", lore: "Путь существует лишь пока его помнят.", objective: "ПОЙМАЙ ТЕНЬ И ПЕРЕЙДИ", gaps: [{ x: 400, width: 250 }], movingGapIndexes: [0], parTimeSec: 50 }),
+  createAdditionalLevel({ id: 14, key: "light-storm", title: "Световая буря", subtitle: "Аномалия", description: "Сочетай статичный и движущийся кристаллы.", lore: "Аномалия разорвала привычный порядок теней.", objective: "СНАЧАЛА ЗАКРЕПИ МОСТ, ЗАТЕМ ПОЙМАЙ ВТОРОЙ", gaps: [{ x: 360, width: 220 }, { x: 900, width: 285 }], movingGapIndexes: [1], parTimeSec: 92 }),
+  createAdditionalLevel({ id: 15, key: "reverse-phase", title: "Обратная фаза", subtitle: "Точный расчёт", description: "Перестрой свет между двумя независимыми мостами.", lore: "Маятник остановился. Наступила тишина перед последним циклом.", objective: "СОБЕРИ ЦЕПОЧКУ ТЕНЕЙ", gaps: [{ x: 385, width: 255 }, { x: 950, width: 300 }], parTimeSec: 95 }),
+  createAdditionalLevel({ id: 16, key: "last-frontier", title: "Последний рубеж", subtitle: "Сложный маршрут", description: "Преодолей два разрыва, один из кристаллов движется.", lore: "За горизонтом больше нет света, кроме того, что ты несёшь.", objective: "ПРЕОДОЛЕЙ ОБА РАЗРЫВА", gaps: [{ x: 400, width: 260 }, { x: 970, width: 310 }], movingGapIndexes: [1], parTimeSec: 100 }),
+  createAdditionalLevel({ id: 17, key: "two-sides", title: "Две стороны", subtitle: "Разветвлённые тени", description: "Закрепи первый мост и перенеси источник ко второму.", lore: "Каждый выбор оставляет собственную тень.", objective: "СОЕДИНИ ДВЕ СТОРОНЫ", gaps: [{ x: 350, width: 235 }, { x: 910, width: 280 }], parTimeSec: 96 }),
+  createAdditionalLevel({ id: 18, key: "sensor-echo", title: "Эхо сенсора", subtitle: "Двойной резонанс", description: "Настрой два моста и сохрани точность положения лампы.", lore: "Старые механизмы проснулись от знакомого прикосновения.", objective: "СОЗДАЙ ДВА МОСТА", gaps: [{ x: 420, width: 270 }, { x: 1010, width: 320 }], parTimeSec: 108 }),
+  createAdditionalLevel({ id: 19, key: "cycle-edge", title: "Грань цикла", subtitle: "Последняя проверка", description: "Синхронизируй движущийся кристалл с последним переходом.", lore: "Граница между светом и тьмой стала почти невидимой.", objective: "ПОЙМАЙ СОВПАДЕНИЕ ФАЗ", gaps: [{ x: 390, width: 250 }, { x: 960, width: 315 }], movingGapIndexes: [0, 1], parTimeSec: 112 }),
+  createAdditionalLevel({ id: 20, key: "final-cycle", title: "Последний цикл", subtitle: "Финал", description: "Пройди последнее испытание и замкни цикл.", lore: "Арзон понял: свет не уничтожает тьму. Он показывает дорогу сквозь неё.", objective: "ЗАМКНИ ПОСЛЕДНИЙ ЦИКЛ", gaps: [{ x: 400, width: 275 }, { x: 1000, width: 330 }], movingGapIndexes: [1], parTimeSec: 120 })
+);
+
+function attachLevelMetadataAndHints(level) {
+  level.chapter ??= Math.ceil(level.id / 5);
+  level.parTimeSec ??= 45 + level.id * 4;
+  level.localizationKeys = {
+    title: `level.${level.id}.title`,
+    subtitle: `level.${level.id}.subtitle`,
+    description: `level.${level.id}.description`,
+    lore: `level.${level.id}.lore`
+  };
+  const crystals = level.obstacles.filter(item => item.type === "crystal");
+  for (const crystal of crystals) {
+    const gap = level.gaps.find(item => item.bridgeId === crystal.bridgeId);
+    if (!gap) throw new Error(`Level ${level.id}: crystal ${crystal.id} has no matching gap`);
+    crystal.gapId = gap.id;
+    crystal.lockOnComplete = level.gaps.length > 1 && !crystal.patrol;
+  }
+
+  const steps = [];
+  for (const sensor of level.sensors ?? []) {
+    const sensorHint = ShadowProjection.findSensorPosition({
+      bounds: level.lampBounds, obstacles: crystals, groundY: level.world.groundY,
+      sensor, worldWidth: level.world.width, step: 2
+    });
+    if (!sensorHint) throw new Error(`Level ${level.id}: no lamp position can charge sensor ${sensor.id}`);
+    steps.push({ x: sensorHint.x, y: sensorHint.y, action: "charge-sensor", sensorId: sensor.id });
+  }
+  for (const gap of level.gaps) {
+    const crystal = crystals.find(item => item.gapId === gap.id);
+    if (!crystal) throw new Error(`Level ${level.id}: gap ${gap.id} has no crystal`);
+    const hint = ShadowProjection.findFullCoveragePosition({
+      bounds: level.lampBounds,
+      obstacle: { x: crystal.x, y: crystal.y, width: crystal.width, height: crystal.height },
+      groundY: level.world.groundY,
+      gapStart: gap.x,
+      gapEnd: gap.x + gap.width,
+      step: 2
+    });
+    if (!hint) throw new Error(`Level ${level.id}: no full-coverage lamp position for gap ${gap.id}`);
+    steps.push({ x: hint.x, y: hint.y, gapId: gap.id, action: "build-bridge" });
+  }
+  if (steps.length === 1 && steps[0].action === "build-bridge") {
+    level.hintPosition = { x: steps[0].x, y: steps[0].y };
+    delete level.hintSteps;
+  } else {
+    level.hintSteps = steps;
+    delete level.hintPosition;
+  }
+}
+
+for (const level of LEVELS) attachLevelMetadataAndHints(level);
 
 export function getLevelById(levelId) {
   const id = Number(levelId);
