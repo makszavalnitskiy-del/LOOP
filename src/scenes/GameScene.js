@@ -507,7 +507,10 @@ export class GameScene extends Phaser.Scene {
     for (const sensor of this.sensorObjects ?? []) {
       if (sensor.activated && !sensor.data.holdToMaintain) continue;
       const sensorRect = { x: sensor.data.x, y: sensor.data.y, width: sensor.data.width, height: sensor.data.height };
-      const covered = this.bridges.some(item => ShadowProjection.intersectsRect(item.shadow?.polygon ?? [], sensorRect));
+      const covered = this.bridges.some(item => {
+        if (sensor.data.crystalId && item.obstacleId !== sensor.data.crystalId) return false;
+        return ShadowProjection.intersectsRect(item.shadow?.polygon ?? [], sensorRect);
+      });
       sensor.elapsed = covered ? sensor.elapsed + delta : 0;
       const progress = Phaser.Math.Clamp(sensor.elapsed / sensor.data.requiredHold, 0, 1);
       sensor.visual.setFillStyle(sensor.data.color ?? 0x9d83ff, 0.18 + progress * 0.55);
@@ -1034,6 +1037,7 @@ export class GameScene extends Phaser.Scene {
     });
     this.time.delayedCall(4000, () => {
       this.physics.world.timeScale = 1;
+      this.transitioning = false;
       this.showEpilogueScreen();
     });
   }
