@@ -64,6 +64,43 @@ export class AwakeningScene extends Phaser.Scene {
     drawCrystal(72,486,.8); drawCrystal(365,482,.55);
     drawCrystal(755,486,.75); drawCrystal(900,486,.5);
 
+    // Soft pulsing halos make the crystals feel alive without adding physics bodies.
+    [[72,474,19],[365,470,13],[755,474,18],[900,478,11]].forEach(([x,y,r], i) => {
+      const halo = this.add.circle(x, y, r, 0x45dcff, .10).setDepth(3);
+      this.tweens.add({
+        targets: halo,
+        alpha: { from: .06, to: .22 },
+        scale: { from: .78, to: 1.22 },
+        duration: 1250 + i * 170,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+        delay: i * 180
+      });
+    });
+
+    // Slow drifting motes add atmosphere; they are visual-only and never affect gameplay.
+    for (let i = 0; i < 14; i++) {
+      const mote = this.add.circle(
+        Phaser.Math.Between(30, 930),
+        Phaser.Math.Between(230, 485),
+        Phaser.Math.FloatBetween(1, 2.2),
+        i % 3 === 0 ? 0x9b82ff : 0x76eaff,
+        Phaser.Math.FloatBetween(.18, .42)
+      ).setDepth(5);
+      this.tweens.add({
+        targets: mote,
+        y: mote.y - Phaser.Math.Between(18, 48),
+        x: mote.x + Phaser.Math.Between(-12, 12),
+        alpha: { from: mote.alpha, to: .04 },
+        duration: Phaser.Math.Between(2400, 4200),
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+        delay: i * 115
+      });
+    }
+
     const floorDetails = this.add.graphics().setDepth(3);
     floorDetails.lineStyle(2,0x747bd0,.48);
     floorDetails.lineBetween(0,500,400,500);
@@ -295,6 +332,10 @@ export class AwakeningScene extends Phaser.Scene {
     this.playerVisual.setScale(facing, 1);
     this.arzonSprite.setPosition(0, -9 + bob * .25);
     this.arzonSprite.setScale(this.arzonBaseScaleX * squashX, this.arzonBaseScaleY * squashY);
+    // Gentle flame sway gives the spirit a living silhouette during every movement state.
+    this.arzonSprite.angle = grounded
+      ? Math.sin(this.time.now / (moving ? 95 : 310)) * (moving ? 2.4 : 1.2)
+      : Phaser.Math.Clamp(vx / 230, -1, 1) * 4;
 
     const companionTargetX = this.player.x - facing * 68;
     const companionTargetY = this.player.y + (grounded ? 8 : 20);
