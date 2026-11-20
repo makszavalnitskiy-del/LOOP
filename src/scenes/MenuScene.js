@@ -156,8 +156,7 @@ export class MenuScene extends Phaser.Scene {
       shadow: { offsetX: 0, offsetY: 0, color: "#5b83ff", blur: 18, fill: true }
     }).setOrigin(0.5);
     const subtitle = this.add.text(centerX, 88, ru ? "ПОСЛЕДНИЙ ЦИКЛ" : "THE LAST CYCLE", {
-      fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "bold", color: "#9aafff",
-      letterSpacing: 3
+      fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "bold", color: "#9aafff"
     }).setOrigin(0.5);
     this.ui.add([title, subtitle]);
 
@@ -181,8 +180,7 @@ export class MenuScene extends Phaser.Scene {
     }, 0x252b60, 0x4654a2, "9px");
 
     const chapterTitle = this.add.text(centerX, 222, t("ui.chapter", this.language).toUpperCase() + " · " + t("ui.levelSelect", this.language).toUpperCase(), {
-      fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "bold", color: "#9aa9e9",
-      letterSpacing: 1
+      fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "bold", color: "#9aa9e9"
     }).setOrigin(0.5);
     this.ui.add(chapterTitle);
 
@@ -241,8 +239,7 @@ export class MenuScene extends Phaser.Scene {
     this.addButton(this.ui, centerX, 500, 300, 44, continueText, () => this.startGame(continueLevel), 0x353f9d, 0x5364d1, "13px");
 
     const footer = this.add.text(centerX, 562, ru ? "ИГРА О СВЕТЕ, ТЕНЯХ И ПАМЯТИ" : "A GAME ABOUT LIGHT, SHADOWS AND MEMORY", {
-      fontFamily: "Nunito, sans-serif", fontSize: "9px", fontStyle: "bold", color: "#747cae",
-      letterSpacing: 1
+      fontFamily: "Nunito, sans-serif", fontSize: "9px", fontStyle: "bold", color: "#747cae"
     }).setOrigin(0.5);
     this.ui.add(footer);
   }
