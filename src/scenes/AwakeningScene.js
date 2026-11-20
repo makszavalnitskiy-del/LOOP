@@ -65,13 +65,19 @@ export class AwakeningScene extends Phaser.Scene {
 
     // Illustrated, high-resolution character artwork replaces the temporary primitive drawings.
     this.playerVisual = this.add.container(this.player.x, this.player.y);
-    const arzonSprite = this.add.image(0, -9, "arzon").setDisplaySize(88, 96);
-    this.playerVisual.add(arzonSprite);
-    this.tweens.add({ targets: arzonSprite, scaleY: { from: .365, to: .385 }, duration: 780, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.arzonSprite = this.add.image(0, -9, "arzon").setDisplaySize(88, 96);
+    this.arzonBaseScaleX = this.arzonSprite.scaleX;
+    this.arzonBaseScaleY = this.arzonSprite.scaleY;
+    this.playerVisual.add(this.arzonSprite);
 
-    // Pushi is a separate illustrated fox-cat companion with its signature luminous tail ring.
+    // Pushi has an independent aura and follows Arzon with a soft, delayed motion.
+    this.pushiAura = this.add.circle(65, 490, 31, 0x9b63ff, .10);
     this.pushi = this.add.image(65, 490, "pushi").setDisplaySize(92, 92);
-    this.tweens.add({ targets: this.pushi, angle: { from: -2, to: 2 }, y: { from: 486, to: 492 }, duration: 1150, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.pushiBaseScaleX = this.pushi.scaleX;
+    this.pushiBaseScaleY = this.pushi.scaleY;
+    this.pushiShadow = this.add.ellipse(65, 535, 48, 10, 0x080817, .45);
+    this.wasGrounded = false;
+    this.landSquash = 0;
 
     // Draggable lamp and its light pool.
     this.lampGlow = this.add.circle(500, 250, 78, 0x55dfff, .09);
@@ -197,10 +203,35 @@ export class AwakeningScene extends Phaser.Scene {
       this.player.setVelocityY(-430);
       this.mobileInput.jump = false;
     }
-    this.playerVisual.setPosition(this.player.x, this.player.y + Math.sin(this.time.now / 170) * 2);
-    this.playerVisual.setScale(this.player.body.velocity.x < 0 ? -1 : 1, 1);
-    this.pushi.x = Phaser.Math.Linear(this.pushi.x, this.player.x - 48, .08);
-    this.pushi.setPosition(this.player.x - 48, 490 + Math.sin(this.time.now / 220) * 4);
+    const vx = this.player.body.velocity.x;
+    const vy = this.player.body.velocity.y;
+    const grounded = this.player.body.blocked.down || this.player.body.touching.down;
+    const facing = vx < -8 ? -1 : vx > 8 ? 1 : (this.facing || 1);
+    this.facing = facing;
+
+    // Readable state animation: idle breathing, run bounce, jump stretch and landing squash.
+    if (grounded && !this.wasGrounded) this.landSquash = 1;
+    this.wasGrounded = grounded;
+    this.landSquash = Phaser.Math.Linear(this.landSquash, 0, .22);
+    const moving = grounded && Math.abs(vx) > 12;
+    const bob = grounded ? (moving ? Math.abs(Math.sin(this.time.now / 72)) * 3 : Math.sin(this.time.now / 260) * 2) : 0;
+    const squashX = grounded ? (moving ? 1 + this.landSquash * .10 : 1 + this.landSquash * .16) : .91;
+    const squashY = grounded ? (moving ? 1 - this.landSquash * .08 : 1 - this.landSquash * .12) : 1.13;
+    this.playerVisual.setPosition(this.player.x, this.player.y + bob);
+    this.playerVisual.setScale(facing, 1);
+    this.arzonSprite.setPosition(0, -9 + bob * .25);
+    this.arzonSprite.setScale(this.arzonBaseScaleX * squashX, this.arzonBaseScaleY * squashY);
+
+    const companionTargetX = this.player.x - facing * 48;
+    const companionTargetY = this.player.y + (grounded ? 8 : 20);
+    this.pushi.x = Phaser.Math.Linear(this.pushi.x, companionTargetX, .09);
+    this.pushi.y = Phaser.Math.Linear(this.pushi.y, companionTargetY + Math.sin(this.time.now / 190) * 3, .10);
+    this.pushi.flipX = facing < 0;
+    const companionBob = Math.sin(this.time.now / 145) * .035;
+    this.pushi.setScale(this.pushiBaseScaleX * (1 + companionBob), this.pushiBaseScaleY * (1 - companionBob));
+    this.pushi.angle = Math.sin(this.time.now / 330) * 2.2;
+    this.pushiAura.setPosition(this.pushi.x, this.pushi.y + 4);
+    this.pushiShadow.setPosition(this.pushi.x, 535);
     if (this.player.x > 790 && this.player.y > 390 && this.bridgeActive) {
       this.levelComplete = true;
       this.player.setVelocity(0, 0);
