@@ -3,7 +3,7 @@ export class ShadowProjection {
   static calculate({ lightX, lightY, obstacle, groundY, gapStart, gapEnd }) {
     const topY = obstacle.y;
     const bottomY = obstacle.y + obstacle.height;
-    if (lightY >= topY || groundY <= topY || bottomY < groundY - 2) {
+    if (lightY >= topY || groundY <= topY) {
       return { active: false, x: gapStart, width: 0, polygon: [] };
     }
 
