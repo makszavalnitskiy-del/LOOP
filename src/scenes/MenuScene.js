@@ -29,17 +29,17 @@ export class MenuScene extends Phaser.Scene {
   }
   update(time) { this.drawStars(time); }
   createBackground(w, h) {
-    const bg = this.add.graphics();
+    const bg = this.add.graphics().setDepth(-3);
     bg.fillGradientStyle(0x09091b, 0x101333, 0x171044, 0x080817, 1);
     bg.fillRect(0, 0, w, h);
-    const glow = this.add.circle(w / 2, h * .39, 210, 0x405cff, .075);
+    const glow = this.add.circle(w / 2, h * .39, 210, 0x405cff, .075).setDepth(-2);
     this.tweens.add({ targets: glow, alpha: .14, scale: 1.18, duration: 2400, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    const lower = this.add.circle(w / 2, h * .78, 250, 0x8b48ff, .035);
+    const lower = this.add.circle(w / 2, h * .78, 250, 0x8b48ff, .035).setDepth(-2);
     this.tweens.add({ targets: lower, alpha: .075, scale: 1.12, duration: 3100, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    const line = this.add.graphics(); line.lineStyle(1, 0x536aff, .13); line.lineBetween(0, h * .72, w, h * .72);
+    const line = this.add.graphics().setDepth(-1); line.lineStyle(1, 0x536aff, .13); line.lineBetween(0, h * .72, w, h * .72);
   }
   createStarField(w, h) {
-    this.starsGraphics = this.add.graphics().setDepth(-1);
+    this.starsGraphics = this.add.graphics().setDepth(0);
     this.stars = [];
     for (let i = 0; i < 78; i++) {
       this.stars.push({
