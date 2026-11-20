@@ -13,10 +13,16 @@ export class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: glow, alpha: .18, scale: 1.25, duration: 2200, yoyo: true, repeat: -1 });
     this.add.text(w / 2, 145, "L O O P", { fontFamily: "Nunito", fontSize: "76px", fontStyle: "900", color: "#e9f7ff", stroke: "#617aff", strokeThickness: 2 }).setOrigin(.5);
     this.add.text(w / 2, 215, "ПОСЛЕДНИЙ ЦИКЛ", { fontFamily: "Nunito", fontSize: "17px", fontStyle: "800", color: "#8ca5ff", letterSpacing: 7 }).setOrigin(.5);
-    const start = this.add.text(w / 2, 390, "НАЧАТЬ ПУТЕШЕСТВИЕ", { fontFamily: "Nunito", fontSize: "20px", fontStyle: "900", color: "#ffffff", backgroundColor: "#3434a8", padding: { x: 28, y: 16 } }).setOrigin(.5).setInteractive({ useHandCursor: true });
+    const arzon = this.add.image(w / 2 - 105, 315, "arzon").setDisplaySize(112, 112);
+    const pushi = this.add.image(w / 2 + 105, 322, "pushi").setDisplaySize(108, 108);
+    this.tweens.add({ targets: arzon, y: 304, duration: 1050, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: pushi, y: 331, angle: { from: -3, to: 3 }, duration: 1250, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.add.text(w / 2 - 105, 385, "АРЗОН", { fontFamily: "Nunito", fontSize: "11px", fontStyle: "900", color: "#82eaff", letterSpacing: 2 }).setOrigin(.5);
+    this.add.text(w / 2 + 105, 385, "ПУШИ", { fontFamily: "Nunito", fontSize: "11px", fontStyle: "900", color: "#c29aff", letterSpacing: 2 }).setOrigin(.5);
+    const start = this.add.text(w / 2, 445, "НАЧАТЬ ПУТЕШЕСТВИЕ", { fontFamily: "Nunito", fontSize: "20px", fontStyle: "900", color: "#ffffff", backgroundColor: "#3434a8", padding: { x: 28, y: 16 } }).setOrigin(.5).setInteractive({ useHandCursor: true });
     start.on("pointerover", () => start.setStyle({ backgroundColor: "#4c55d5", color: "#bffaff" }));
     start.on("pointerout", () => start.setStyle({ backgroundColor: "#3434a8", color: "#ffffff" }));
     start.on("pointerdown", () => this.scene.start("AwakeningScene"));
-    this.add.text(w / 2, 485, "ИГРА О СВЕТЕ, ТЕНЯХ И ПАМЯТИ", { fontFamily: "Nunito", fontSize: "12px", fontStyle: "700", color: "#747cae", letterSpacing: 3 }).setOrigin(.5);
+    this.add.text(w / 2, 525, "ИГРА О СВЕТЕ, ТЕНЯХ И ПАМЯТИ", { fontFamily: "Nunito", fontSize: "12px", fontStyle: "700", color: "#747cae", letterSpacing: 3 }).setOrigin(.5);
   }
 }
