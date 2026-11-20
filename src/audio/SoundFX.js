@@ -257,6 +257,12 @@ export class SoundFX {
     this.tone({ frequency: 130, endFrequency: 260, duration: 0.36, type: "triangle", volume: 0.055 });
   }
 
+  playBridgeLock() {
+    this.tone({ frequency: 392, endFrequency: 784, duration: 0.2, type: "triangle", volume: 0.075 });
+    this.tone({ frequency: 587, endFrequency: 1174, duration: 0.24, type: "sine", volume: 0.055, delay: 0.035 });
+    this.tone({ frequency: 880, endFrequency: 1320, duration: 0.16, type: "sine", volume: 0.035, delay: 0.09 });
+  }
+
   playBridgeFade() {
     this.tone({ frequency: 180, endFrequency: 48, duration: 0.42, type: "sine", volume: 0.09 });
   }
