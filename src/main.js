@@ -1,6 +1,7 @@
 import { BootScene } from "./scenes/BootScene.js";
 import { MenuScene } from "./scenes/MenuScene.js";
 import { AwakeningScene } from "./scenes/AwakeningScene.js";
+import { GameScene } from "./scenes/GameScene.js";
 
 const GAME_WIDTH = 960;
 const GAME_HEIGHT = 600;
@@ -44,7 +45,7 @@ function createGame() {
     physics: { default: "arcade", arcade: { debug: false, gravity: { x: 0, y: 0 }, fps: 60, fixedStep: true } },
     fps: { target: 60, forceSetTimeOut: false, smoothStep: true },
     audio: { disableWebAudio: true },
-    scene: [BootScene, MenuScene, AwakeningScene]
+    scene: [BootScene, MenuScene, AwakeningScene, GameScene]
   });
   game.events.once("ready", () => {
     updateLoadingProgress(1);
