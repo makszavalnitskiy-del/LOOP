@@ -23,8 +23,8 @@ function crystalsFor(level) {
 }
 
 function crystalForGap(level, gapIndex) {
-  const bridgeNumber = gapIndex + 1;
-  return crystalsFor(level).find(item => item.bridgeId === `bridge-${bridgeNumber}`) ?? null;
+  const gap = level.gaps[gapIndex];
+  return crystalsFor(level).find(item => item.bridgeId === gap.bridgeId) ?? null;
 }
 
 function findLampPosition(level, predicate, step = 5) {
@@ -132,7 +132,8 @@ test("every gap on every level has an explicitly linked crystal", () => {
     assert.equal(crystalsFor(level).length, level.gaps.length, `level ${level.id} crystal count`);
     for (let index = 0; index < level.gaps.length; index++) {
       const crystal = crystalForGap(level, index);
-      assert.ok(crystal, `level ${level.id} gap ${index + 1} must map to bridge-${index + 1}`);
+      assert.ok(gap.bridgeId, `level ${level.id} gap ${gap.id} must declare bridgeId`);
+      assert.ok(crystal, `level ${level.id} gap ${gap.id} must map to ${gap.bridgeId}`);
       assert.ok(crystal.width > 0 && crystal.height > 0);
     }
   }
