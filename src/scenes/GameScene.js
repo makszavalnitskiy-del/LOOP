@@ -355,6 +355,12 @@ export class GameScene extends Phaser.Scene {
       fontFamily: "Nunito, sans-serif", fontSize: "10px", fontStyle: "800", color: "#8ea5d8"
     });
     this.hud.add(this.objectiveText);
+    if (this.newCyclePlus) {
+      this.hud.add(this.add.text(width / 2, 22, "НОВЫЙ ЦИКЛ +  ·  ЗАБЕГ НА РЕКОРД", {
+        fontFamily: "Nunito, sans-serif", fontSize: "10px", fontStyle: "900",
+        color: "#ffd99a", stroke: "#17102f", strokeThickness: 3
+      }).setOrigin(0.5));
+    }
     this.createHudButton(width - 278, 30, 76, 30, "РЕСТАРТ", () => this.restartLevel());
     this.createHudButton(width - 190, 30, 68, 30, "МЕНЮ", () => this.returnToMenu());
     this.createHudButton(width - 112, 30, 76, 30, "ПАУЗА", () => this.togglePause());
@@ -1112,7 +1118,7 @@ export class GameScene extends Phaser.Scene {
     const seconds = Number((this.levelElapsed / 1000).toFixed(2));
     if (!bestTimes[this.level.id] || seconds < bestTimes[this.level.id]) bestTimes[this.level.id] = seconds;
     const par = Math.max(1, Number(this.level.parTimeSec) || 60);
-    const earnedStars = seconds <= par ? 3 : seconds <= par * 1.5 ? 2 : 1;
+    const earnedStars = seconds <= par * 0.72 ? 3 : seconds <= par ? 2 : 1;
     const stars = { ...(cloud.stars ?? {}), ...(previous.stars ?? {}) };
     stars[this.level.id] = Math.max(Number(stars[this.level.id]) || 0, earnedStars);
     const completedLevels = [...new Set([...(cloud.completedLevels ?? []), ...(previous.completedLevelsList ?? []), this.level.id])];
