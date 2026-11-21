@@ -1,21 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
 <defs>
- <linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e9ffff"/><stop offset=".35" stop-color="#75efff"/><stop offset=".72" stop-color="#269ce9"/><stop offset="1" stop-color="#2450b9"/></linearGradient>
- <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d8ffff"/><stop offset=".38" stop-color="#55dfff"/><stop offset=".72" stop-color="#2469dc"/><stop offset="1" stop-color="#172e85"/></linearGradient>
- <radialGradient id="core"><stop stop-color="#fff"/><stop offset=".35" stop-color="#a8ffff"/><stop offset="1" stop-color="#43cfff" stop-opacity="0"/></radialGradient>
- <filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
- <linearGradient id="eye" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#c6a1ff"/><stop offset="1" stop-color="#7135df"/></linearGradient>
+ <linearGradient id="flameOuter" x1="0" y1="0" x2=".82" y2="1"><stop stop-color="#f0ffff"/><stop offset=".22" stop-color="#8af5ff"/><stop offset=".55" stop-color="#35cfff"/><stop offset=".82" stop-color="#2678e8"/><stop offset="1" stop-color="#243c9d"/></linearGradient>
+ <linearGradient id="flameInner" x1=".2" y1="0" x2=".7" y2="1"><stop stop-color="#fff"/><stop offset=".28" stop-color="#c9ffff"/><stop offset=".62" stop-color="#63eaff"/><stop offset="1" stop-color="#2599e7"/></linearGradient>
+ <linearGradient id="sideFlame" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a9ffff"/><stop offset=".45" stop-color="#42dfff"/><stop offset="1" stop-color="#2865d5"/></linearGradient>
+ <radialGradient id="core" cx=".38" cy=".28" r=".78"><stop stop-color="#fff"/><stop offset=".22" stop-color="#e9ffff"/><stop offset=".48" stop-color="#9ffaff"/><stop offset=".76" stop-color="#45cfff"/><stop offset="1" stop-color="#4b75ff"/></radialGradient>
+ <linearGradient id="eye" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f0caff"/><stop offset=".38" stop-color="#a76cff"/><stop offset=".76" stop-color="#6530d4"/><stop offset="1" stop-color="#25156d"/></linearGradient>
+ <radialGradient id="irisGlow"><stop stop-color="#ff9bfa" stop-opacity=".95"/><stop offset="1" stop-color="#9d49ff" stop-opacity="0"/></radialGradient>
+ <filter id="bloom" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="13" result="blur"/><feColorMatrix in="blur" type="matrix" values="0 0 0 0 .12 0 0 0 0 .65 0 0 0 0 1 0 0 0 .8 0" result="tint"/><feMerge><feMergeNode in="tint"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
 </defs>
-<g filter="url(#glow)" opacity=".55"><path d="M128 19 C103 53 109 63 85 76 C52 95 57 155 79 183 C93 202 109 211 128 214 C150 211 172 195 184 171 C204 132 183 96 159 78 C145 67 151 43 128 19Z" fill="#38dfff"/></g>
-<path d="M125 25 C108 54 112 65 91 79 C62 98 65 143 77 169 C87 193 105 209 128 216 C151 209 169 193 179 169 C191 143 194 98 165 79 C144 65 148 54 125 25Z" fill="url(#flame)" stroke="#bafaff" stroke-width="3"/>
-<path d="M97 89 C76 103 80 132 91 150 C100 165 110 171 128 174 C146 171 156 165 165 150 C176 132 180 103 159 89 C146 80 145 61 137 48 C132 68 139 80 128 91 C117 80 124 68 119 51 C106 66 111 79 97 89Z" fill="url(#body)" opacity=".92"/>
-<ellipse cx="128" cy="202" rx="38" ry="18" fill="url(#core)" opacity=".9"/>
-<path d="M96 130 C96 113 108 103 119 105 C127 107 130 116 128 126 C126 113 137 104 148 108 C162 113 165 129 159 141 C151 157 106 157 96 140Z" fill="#14265e" opacity=".92"/>
-<ellipse cx="109" cy="130" rx="12" ry="16" fill="#fff"/><ellipse cx="147" cy="130" rx="12" ry="16" fill="#fff"/>
-<ellipse cx="111" cy="132" rx="8" ry="11" fill="url(#eye)"/><ellipse cx="145" cy="132" rx="8" ry="11" fill="url(#eye)"/>
-<ellipse cx="112" cy="134" rx="3.5" ry="6" fill="#17123f"/><ellipse cx="144" cy="134" rx="3.5" ry="6" fill="#17123f"/>
-<circle cx="108" cy="126" r="3.5" fill="#fff"/><circle cx="141" cy="126" r="3.5" fill="#fff"/>
-<path d="M121 158 Q128 164 135 158" fill="none" stroke="#d9ffff" stroke-width="3" stroke-linecap="round"/>
-<circle cx="128" cy="190" r="15" fill="url(#core)" filter="url(#glow)"/><circle cx="128" cy="190" r="5" fill="#f4ffff"/>
-<path d="M91 184 Q75 194 80 208 M165 184 Q181 194 176 208" fill="none" stroke="#9cf5ff" stroke-width="5" stroke-linecap="round"/>
+<!-- aura and floating sparks -->
+<ellipse cx="256" cy="277" rx="164" ry="190" fill="#39dfff" opacity=".13" filter="url(#soft)"/>
+<g filter="url(#bloom)" opacity=".55"><path d="M253 25 C221 79 229 104 180 133 C116 171 105 240 130 315 C148 370 189 410 246 445 C267 458 294 440 319 422 C379 379 410 318 397 246 C389 194 355 157 315 133 C281 112 288 62 253 25Z" fill="#36dfff"/></g>
+<path d="M251 30 C224 77 229 102 185 130 C132 164 113 223 126 283 C137 344 179 397 240 441 C253 450 267 451 281 443 C343 406 388 353 399 292 C412 223 384 165 327 132 C290 110 288 68 251 30Z" fill="url(#flameOuter)" stroke="#c7ffff" stroke-width="5" stroke-linejoin="round"/>
+<!-- flame curls -->
+<path d="M153 284 C119 255 120 214 147 185 C151 219 169 225 185 234 C171 252 169 271 184 294 C174 307 162 299 153 284Z" fill="url(#sideFlame)" stroke="#8ef5ff" stroke-width="3"/>
+<path d="M365 292 C398 265 397 224 373 190 C369 221 350 229 336 239 C349 257 349 276 334 297 C346 309 357 304 365 292Z" fill="url(#sideFlame)" stroke="#8ef5ff" stroke-width="3"/>
+<path d="M230 103 C208 145 176 154 169 202 C162 246 184 284 215 302 C196 263 207 230 230 211 C252 192 248 158 230 103Z" fill="url(#flameInner)" opacity=".88"/>
+<path d="M280 84 C315 135 343 150 347 203 C351 246 329 281 300 301 C318 257 301 231 283 211 C264 188 267 141 280 84Z" fill="url(#flameInner)" opacity=".76"/>
+<path d="M252 57 C240 104 256 128 246 158 C239 179 221 194 216 219 C209 254 226 279 256 294 C284 276 301 248 290 215 C283 191 266 180 269 149 C273 119 267 84 252 57Z" fill="#eaffff" opacity=".52"/>
+<!-- face shadow -->
+<path d="M163 251 C165 206 204 181 255 184 C310 181 351 209 350 255 C349 310 313 341 256 344 C201 341 163 310 163 251Z" fill="#15316f" opacity=".83"/>
+<path d="M176 247 C184 211 213 198 255 199 C296 197 329 213 338 247 C344 283 319 316 256 322 C199 318 170 286 176 247Z" fill="url(#flameInner)" opacity=".18"/>
+<!-- brows -->
+<path d="M188 214 Q211 196 235 207" fill="none" stroke="#2877c9" stroke-width="9" stroke-linecap="round"/>
+<path d="M277 207 Q302 195 324 214" fill="none" stroke="#2877c9" stroke-width="9" stroke-linecap="round"/>
+<!-- eyes -->
+<ellipse cx="211" cy="260" rx="34" ry="43" fill="#f8ffff"/>
+<ellipse cx="302" cy="260" rx="34" ry="43" fill="#f8ffff"/>
+<ellipse cx="214" cy="265" rx="25" ry="34" fill="url(#eye)"/>
+<ellipse cx="299" cy="265" rx="25" ry="34" fill="url(#eye)"/>
+<ellipse cx="214" cy="280" rx="14" ry="17" fill="#1c175d"/>
+<ellipse cx="299" cy="280" rx="14" ry="17" fill="#1c175d"/>
+<ellipse cx="214" cy="282" rx="8" ry="10" fill="#090e35"/>
+<ellipse cx="299" cy="282" rx="8" ry="10" fill="#090e35"/>
+<circle cx="202" cy="245" r="11" fill="#fff"/>
+<circle cx="289" cy="245" r="11" fill="#fff"/>
+<circle cx="225" cy="272" r="5" fill="#fff" opacity=".9"/>
+<circle cx="310" cy="272" r="5" fill="#fff" opacity=".9"/>
+<ellipse cx="214" cy="290" rx="19" ry="9" fill="url(#irisGlow)" opacity=".75"/>
+<ellipse cx="299" cy="290" rx="19" ry="9" fill="url(#irisGlow)" opacity=".75"/>
+<!-- smile -->
+<path d="M240 321 Q256 335 272 321" fill="none" stroke="#d9ffff" stroke-width="5" stroke-linecap="round"/>
+<!-- chest core -->
+<ellipse cx="256" cy="389" rx="69" ry="56" fill="#42dfff" opacity=".25" filter="url(#bloom)"/>
+<path d="M256 347 C274 365 299 384 299 405 C299 430 280 449 256 449 C232 449 213 430 213 405 C213 384 238 365 256 347Z" fill="url(#core)" stroke="#d7ffff" stroke-width="4"/>
+<path d="M256 363 L283 405 L256 434 L229 405Z" fill="#b9ffff" opacity=".9" stroke="#fff" stroke-width="3"/>
+<path d="M256 375 L272 405 L256 423 L240 405Z" fill="#6cecff" stroke="#fff" stroke-width="2"/>
+<path d="M256 375 L256 423" stroke="#fff" stroke-width="2" opacity=".8"/>
+<!-- lower flame wisps -->
+<path d="M202 397 C171 420 174 456 206 474 C202 449 221 437 234 426Z" fill="url(#sideFlame)" stroke="#8cf4ff" stroke-width="3"/>
+<path d="M310 397 C341 420 338 456 306 474 C310 449 291 437 278 426Z" fill="url(#sideFlame)" stroke="#8cf4ff" stroke-width="3"/>
+<!-- highlights -->
+<path d="M145 238 C147 184 174 158 203 143" fill="none" stroke="#edffff" stroke-width="7" stroke-linecap="round" opacity=".8"/>
+<path d="M344 172 Q374 202 374 239" fill="none" stroke="#b7ffff" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+<path d="M180 345 Q197 382 226 397" fill="none" stroke="#d8ffff" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+<!-- motes -->
+<g filter="url(#bloom)"><circle cx="104" cy="225" r="8" fill="#c9ffff"/><circle cx="405" cy="193" r="7" fill="#9bf8ff"/><circle cx="126" cy="355" r="5" fill="#a8ffff"/><circle cx="380" cy="383" r="5" fill="#a8ffff"/></g>
 </svg>
