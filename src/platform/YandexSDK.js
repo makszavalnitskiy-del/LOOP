@@ -195,7 +195,9 @@ class YandexSDKManager {
   }
 
   async saveProgress(data = {}) {
-    const merged = mergeProgress(this.progress, data);
+    // Incoming data is a patch: it must override existing scalar fields and per-level counters.
+    // mergeProgress still keeps stars monotonic and best times minimal across both sources.
+    const merged = mergeProgress(data, this.progress);
     this.progress = merged;
     try { getStorage()?.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch {}
     if (this.player?.setData) {
