@@ -320,6 +320,7 @@ export class GameScene extends Phaser.Scene {
     this.arzonBaseScaleX = this.arzon.scaleX;
     this.arzonBaseScaleY = this.arzon.scaleY;
     this.playerVisual.add(this.arzon);
+    this.arzonShadow = this.add.ellipse(start.x, this.worldGroundY + 39, 34, 7, 0x02040e, 0.56).setDepth(18);
     this.arzonAura = this.add.circle(start.x, start.y, 29, 0x53eaff, 0.075).setDepth(19);
     this.landingDustGraphics = this.add.graphics().setDepth(19);
     this.landingDust = [];
@@ -902,6 +903,11 @@ export class GameScene extends Phaser.Scene {
       ? (moving ? speedRatio * 8 : Math.sin(time / 310) * 1.4)
       : Phaser.Math.Clamp(speedRatio * 7, -9, 9);
     this.arzonAura.setPosition(this.player.x, this.player.y - 4);
+    const shadowHeight = Math.max(0, this.worldGroundY - this.player.y);
+    const shadowScale = Phaser.Math.Clamp(1 - shadowHeight / 240, 0.38, 1);
+    this.arzonShadow.setPosition(this.player.x, this.worldGroundY + 39);
+    this.arzonShadow.setScale(shadowScale, shadowScale);
+    this.arzonShadow.setAlpha(0.56 * shadowScale);
     const nearestBridge = this.bridges.reduce((nearest, bridge) => {
       const distance = Math.abs((bridge.gap.x + bridge.gap.width / 2) - this.player.x);
       return !nearest || distance < nearest.distance ? { bridge, distance } : nearest;
