@@ -1023,6 +1023,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.world.timeScale = 0.35;
     this.soundFX?.stopLampFeedback?.();
     this.soundFX?.playFinale?.();
+    this.soundFX?.stopAmbient?.();
     this.player.body.enable = false;
     this.player.setVelocity(0, 0);
     this.cameras.main.stopFollow();
@@ -1078,6 +1079,10 @@ export class GameScene extends Phaser.Scene {
     panel.add(this.add.text(0, -height / 2 + 42, "ЦИКЛ РАЗОРВАН", {
       fontFamily: "Nunito, sans-serif", fontSize: this.scale.width < 520 ? "23px" : "31px",
       fontStyle: "900", color: "#ffe2a6", shadow: { color: "#ffb86b", blur: 18, fill: true }
+    }).setOrigin(0.5));
+    panel.add(this.add.text(0, -height / 2 + 76, "ЗАЛ СЛАВЫ", {
+      fontFamily: "Nunito, sans-serif", fontSize: "10px", fontStyle: "900",
+      color: "#bcaeff", letterSpacing: 3
     }).setOrigin(0.5));
     const story = "Арзон был первой искрой, потерявшей своё имя в бесконечном повторении.\nПуши хранил его свет — даже когда весь мир забывал рассвет.\nТеперь их свет стал новым утром. И этот путь больше не повторится.";
     panel.add(this.add.text(0, -height / 2 + 116, story, {
