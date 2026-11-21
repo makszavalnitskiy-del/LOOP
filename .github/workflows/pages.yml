@@ -38,12 +38,14 @@ jobs:
         run: npm run check
       - name: Run automated tests
         run: npm test
+      - name: Build deployable game bundle
+        run: npm run build:yandex
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
