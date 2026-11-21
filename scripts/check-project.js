@@ -29,7 +29,7 @@ for (const file of files) {
 for (const relative of ["index.html", "style.css"]) {
   const source = fs.readFileSync(path.join(root, relative), "utf8");
   const urls = source.match(/https?:\/\/[A-Za-z0-9.-]+/gi) ?? [];
-  const disallowed = urls.filter(url => !/^https?:\/\/yandex\.ru\//i.test(url));
+  const disallowed = urls.filter(url => !/^https?:\/\/yandex\.ru(?:\/|$)/i.test(url));
   if (disallowed.length) {
     failed = true;
     console.error(relative + " contains external URLs: " + disallowed.join(", "));
