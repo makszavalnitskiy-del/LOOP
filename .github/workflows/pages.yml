@@ -40,6 +40,13 @@ jobs:
         run: npm test
       - name: Build deployable game bundle
         run: npm run build:yandex
+      - name: Save Yandex ZIP package
+        uses: actions/upload-artifact@v4
+        with:
+          name: loop-yandex
+          path: loop-yandex.zip
+          if-no-files-found: error
+          retention-days: 14
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site
