@@ -177,7 +177,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.add.text(34, 34, "LOOP  /  " + String(this.level.id).padStart(2, "0"), {
       fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "900",
-      color: "#7386c7", letterSpacing: 2
+      color: "#7386c7"
     }).setScrollFactor(0).setDepth(40);
   }
 
@@ -1082,7 +1082,7 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5));
     panel.add(this.add.text(0, -height / 2 + 76, "ЗАЛ СЛАВЫ", {
       fontFamily: "Nunito, sans-serif", fontSize: "10px", fontStyle: "900",
-      color: "#bcaeff", letterSpacing: 3
+      color: "#bcaeff"
     }).setOrigin(0.5));
     const story = "Арзон был первой искрой, потерявшей своё имя в бесконечном повторении.\nПуши хранил его свет — даже когда весь мир забывал рассвет.\nТеперь их свет стал новым утром. И этот путь больше не повторится.";
     panel.add(this.add.text(0, -height / 2 + 116, story, {
