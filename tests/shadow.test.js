@@ -254,6 +254,19 @@ test("the memory sensor sits beyond its patrol crystal and stays inside its shad
   });
   assert.equal(settledProjection.fullCoverage, true,
     "the crystal must form a stable bridge after the act-I patrol ends");
+
+  const heartCrystal = crystalsFor(finale).find(item => item.id === "heart-crystal");
+  const heartGap = finale.gaps.find(item => item.bridgeId === heartCrystal.bridgeId);
+  const heartAtStart = ShadowProjection.calculate({
+    lightX: finale.lampStart.x,
+    lightY: finale.lampStart.y,
+    obstacle: heartCrystal,
+    groundY: finale.world.groundY,
+    gapStart: heartGap.x,
+    gapEnd: heartGap.x + heartGap.width
+  });
+  assert.equal(heartAtStart.fullCoverage, false,
+    "act II must require the player to reposition the lamp for the second bridge");
 });
 
 test("finale sensor hints are projected from their assigned crystals", () => {
