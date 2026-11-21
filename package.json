@@ -9,6 +9,7 @@
     "build:yandex": "node scripts/build-yandex.js"
   },
   "dependencies": {
-    "phaser": "3.80.1"
+    "phaser": "3.80.1",
+    "@fontsource-variable/nunito": "5.3.0"
   }
 }
