@@ -235,6 +235,13 @@ test("finale sensor hints are projected from their assigned crystals", () => {
       gapEnd: finale.world.width
     });
     assert.equal(ShadowProjection.intersectsRect(projection.polygon, sensor), true);
+    const gap = finale.gaps.find(item => item.bridgeId === crystal.bridgeId);
+    assert.ok(gap, `missing bridge gap for ${crystal.id}`);
+    const bridgeProjection = ShadowProjection.calculate({
+      lightX: hint.x, lightY: hint.y, obstacle: crystal,
+      groundY: finale.world.groundY, gapStart: gap.x, gapEnd: gap.x + gap.width
+    });
+    assert.equal(bridgeProjection.fullCoverage, true, `${sensor.id} hint must also build its bridge`);
   }
 });
 
