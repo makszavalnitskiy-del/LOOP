@@ -566,9 +566,28 @@ export class GameScene extends Phaser.Scene {
           if (target.physicsBody) target.physicsBody.enable = false;
         }
         this.soundFX?.playCrystal?.();
-        if (this.level.id === 20 && sensor.data.phase === 1) this.enterFinalPhase(2);
+        if (this.level.id === 20 && sensor.data.phase === 1) {
+          this.freezeMemoryCrystal();
+          this.enterFinalPhase(2);
+        }
       }
     }
+  }
+
+  freezeMemoryCrystal() {
+    const crystal = this.obstacles.find(item => item.data.id === "memory-crystal");
+    if (!crystal || !crystal.data.patrol) return;
+    // The patrol is the act-I obstacle. Once memory is awakened, the crystal
+    // settles into its cradle and becomes a stable bridge source for act II.
+    const anchorX = Number(crystal.data.patrol.start);
+    if (Number.isFinite(anchorX)) crystal.x = anchorX;
+    crystal.data.x = crystal.x;
+    crystal.data.movable = false;
+    crystal.data.patrol = null;
+    crystal.art.setPosition(crystal.x + crystal.width / 2, crystal.y + crystal.height / 2);
+    crystal.core.setPosition(crystal.art.x, crystal.art.y);
+    crystal.halo.setPosition(crystal.art.x, crystal.art.y);
+    this.updateAllBridges();
   }
 
   createFinalActHud() {
