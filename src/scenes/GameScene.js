@@ -1070,7 +1070,8 @@ export class GameScene extends Phaser.Scene {
     this.saveProgress();
     const progress = this.sdk?.progress ?? this.progressData ?? {};
     const stars = Object.values(progress.stars ?? {}).reduce((sum, value) => sum + Math.max(0, Math.min(3, Number(value) || 0)), 0);
-    const totalTime = Object.values(progress.bestTimes ?? {}).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+    const bestTimesTotal = Object.values(progress.bestTimes ?? {}).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+    const totalTime = Math.max(0, Number(progress.currentRunTime) || bestTimesTotal);
     const attempts = Object.values(progress.attemptsByLevel ?? {}).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
     const panel = this.add.container(this.scale.width / 2, this.scale.height / 2).setScrollFactor(0).setDepth(120);
     const width = Math.min(620, this.scale.width - 28);
