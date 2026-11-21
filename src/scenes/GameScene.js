@@ -316,7 +316,7 @@ export class GameScene extends Phaser.Scene {
     this.player.setDragX(PLAYER_DRAG);
     this.player.setBounce(0);
     this.playerVisual = this.add.container(start.x, start.y).setDepth(20);
-    this.arzon = this.add.image(0, -10, "arzon").setDisplaySize(116, 126);
+    this.arzon = this.add.image(0, -10, "arzon").setDisplaySize(92, 138);
     this.arzonBaseScaleX = this.arzon.scaleX;
     this.arzonBaseScaleY = this.arzon.scaleY;
     this.playerVisual.add(this.arzon);
@@ -333,7 +333,7 @@ export class GameScene extends Phaser.Scene {
     const start = this.level.playerStart;
     this.pushiShadow = this.add.ellipse(start.x - 55, this.worldGroundY + 39, 36, 8, 0x050611, 0.5).setDepth(13);
     this.pushiAura = this.add.circle(start.x - 55, start.y, 26, 0x9b63ff, 0.09).setDepth(14);
-    this.pushi = this.add.image(start.x - 55, start.y, "pushi").setDisplaySize(78, 78).setDepth(15);
+    this.pushi = this.add.image(start.x - 55, start.y, "pushi").setDisplaySize(68, 75).setDepth(15);
     this.pushiBaseScaleX = this.pushi.scaleX;
     this.pushiBaseScaleY = this.pushi.scaleY;
     this.pushiTarget = new Phaser.Math.Vector2(start.x - 55, start.y);
