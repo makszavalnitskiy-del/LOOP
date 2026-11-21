@@ -316,11 +316,11 @@ export class GameScene extends Phaser.Scene {
     this.player.setDragX(PLAYER_DRAG);
     this.player.setBounce(0);
     this.playerVisual = this.add.container(start.x, start.y).setDepth(20);
-    this.arzon = this.add.image(0, -10, "arzon").setDisplaySize(92, 138);
+    this.arzon = this.add.image(0, -10, "arzon").setDisplaySize(61.3, 92);
     this.arzonBaseScaleX = this.arzon.scaleX;
     this.arzonBaseScaleY = this.arzon.scaleY;
     this.playerVisual.add(this.arzon);
-    this.arzonAura = this.add.circle(start.x, start.y, 43, 0x53eaff, 0.075).setDepth(19);
+    this.arzonAura = this.add.circle(start.x, start.y, 29, 0x53eaff, 0.075).setDepth(19);
     this.landingDustGraphics = this.add.graphics().setDepth(19);
     this.landingDust = [];
     this.playerVisual.setScale(1);
@@ -331,9 +331,9 @@ export class GameScene extends Phaser.Scene {
 
   createCompanion() {
     const start = this.level.playerStart;
-    this.pushiShadow = this.add.ellipse(start.x - 55, this.worldGroundY + 39, 36, 8, 0x050611, 0.5).setDepth(13);
-    this.pushiAura = this.add.circle(start.x - 55, start.y, 26, 0x9b63ff, 0.09).setDepth(14);
-    this.pushi = this.add.image(start.x - 55, start.y, "pushi").setDisplaySize(68, 75).setDepth(15);
+    this.pushiShadow = this.add.ellipse(start.x - 55, this.worldGroundY + 39, 24, 5.3, 0x050611, 0.5).setDepth(13);
+    this.pushiAura = this.add.circle(start.x - 55, start.y, 17.3, 0x9b63ff, 0.09).setDepth(14);
+    this.pushi = this.add.image(start.x - 55, start.y, "pushi").setDisplaySize(45.3, 50).setDepth(15);
     this.pushiBaseScaleX = this.pushi.scaleX;
     this.pushiBaseScaleY = this.pushi.scaleY;
     this.pushiTarget = new Phaser.Math.Vector2(start.x - 55, start.y);
