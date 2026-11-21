@@ -1,23 +1,75 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
 <defs>
- <linearGradient id="fur" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7650ad"/><stop offset=".45" stop-color="#3b286e"/><stop offset="1" stop-color="#1a1745"/></linearGradient>
- <linearGradient id="ear" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffb0ee"/><stop offset="1" stop-color="#9854d9"/></linearGradient>
- <linearGradient id="tail" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a77bff"/><stop offset="1" stop-color="#35206e"/></linearGradient>
- <filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <linearGradient id="fur" x1=".12" y1="0" x2=".88" y2="1"><stop stop-color="#a77ad8"/><stop offset=".28" stop-color="#68469d"/><stop offset=".62" stop-color="#392568"/><stop offset="1" stop-color="#191536"/></linearGradient>
+ <linearGradient id="furLight" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#f2caff"/><stop offset=".35" stop-color="#b98be2"/><stop offset="1" stop-color="#69439d"/></linearGradient>
+ <linearGradient id="ear" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffb9ef"/><stop offset=".55" stop-color="#d86adf"/><stop offset="1" stop-color="#8443bb"/></linearGradient>
+ <linearGradient id="tail" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c59bff"/><stop offset=".4" stop-color="#7950bb"/><stop offset="1" stop-color="#30205e"/></linearGradient>
+ <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset=".28" stop-color="#ffb8fa"/><stop offset=".62" stop-color="#b65dff"/><stop offset="1" stop-color="#6c8cff"/></linearGradient>
+ <linearGradient id="eye" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f7caff"/><stop offset=".42" stop-color="#bb70ff"/><stop offset=".8" stop-color="#6631c5"/><stop offset="1" stop-color="#27105c"/></linearGradient>
+ <filter id="glow" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
 </defs>
-<path d="M165 172 C210 171 220 126 194 112 C178 104 164 117 174 129 C184 141 200 130 195 119" fill="none" stroke="url(#tail)" stroke-width="23" stroke-linecap="round"/>
-<path d="M184 116 C204 103 216 117 209 132" fill="none" stroke="#67f3ff" stroke-width="5" stroke-linecap="round" filter="url(#glow)"/>
-<ellipse cx="126" cy="176" rx="66" ry="43" fill="url(#fur)" stroke="#9c78d8" stroke-width="3"/>
-<ellipse cx="130" cy="184" rx="37" ry="26" fill="#b68bd5" opacity=".26"/>
-<path d="M70 122 L65 45 Q65 32 77 43 L111 78 Q128 68 145 78 L180 42 Q193 30 193 48 L187 126 Q181 166 128 170 Q78 166 70 122Z" fill="url(#fur)" stroke="#a98be2" stroke-width="3"/>
-<path d="M78 65 L102 91 L83 117Z" fill="url(#ear)"/><path d="M178 64 L151 92 L175 117Z" fill="url(#ear)"/>
-<path d="M84 121 Q95 94 126 99 Q159 94 174 122 Q171 158 128 163 Q88 159 84 121Z" fill="#4a347e"/>
-<ellipse cx="104" cy="126" rx="12" ry="15" fill="#fff"/><ellipse cx="151" cy="126" rx="12" ry="15" fill="#fff"/>
-<ellipse cx="106" cy="128" rx="8" ry="11" fill="#bd7aff"/><ellipse cx="149" cy="128" rx="8" ry="11" fill="#bd7aff"/>
-<ellipse cx="108" cy="130" rx="3.5" ry="6" fill="#211342"/><ellipse cx="147" cy="130" rx="3.5" ry="6" fill="#211342"/>
-<circle cx="102" cy="121" r="3.5" fill="#fff"/><circle cx="145" cy="121" r="3.5" fill="#fff"/>
-<path d="M122 145 Q128 151 134 145" fill="none" stroke="#f5d8ff" stroke-width="3" stroke-linecap="round"/>
-<path d="M82 178 Q68 196 84 207 M157 178 Q172 197 156 207" fill="none" stroke="#281c55" stroke-width="13" stroke-linecap="round"/>
-<path d="M94 201 Q128 215 160 200" fill="none" stroke="#a27be0" stroke-width="4" opacity=".7"/>
-<circle cx="128" cy="174" r="5" fill="#6df4ff" filter="url(#glow)"/>
+<!-- soft violet aura -->
+<ellipse cx="270" cy="302" rx="190" ry="174" fill="#9a55ff" opacity=".12" filter="url(#soft)"/>
+<!-- tail behind body -->
+<path d="M344 348 C414 376 467 332 463 265 C460 218 425 204 404 229 C386 251 405 277 429 266 C445 259 439 240 428 236" fill="none" stroke="#211749" stroke-width="69" stroke-linecap="round"/>
+<path d="M344 348 C414 376 467 332 463 265 C460 218 425 204 404 229 C386 251 405 277 429 266 C445 259 439 240 428 236" fill="none" stroke="url(#tail)" stroke-width="57" stroke-linecap="round"/>
+<path d="M373 348 Q426 352 445 307" fill="none" stroke="#d0a5ff" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+<!-- glowing tail ring -->
+<ellipse cx="438" cy="264" rx="59" ry="25" transform="rotate(28 438 264)" fill="none" stroke="#b65cff" stroke-width="23" opacity=".35" filter="url(#glow)"/>
+<ellipse cx="438" cy="264" rx="59" ry="25" transform="rotate(28 438 264)" fill="none" stroke="url(#ring)" stroke-width="13"/>
+<ellipse cx="438" cy="264" rx="59" ry="25" transform="rotate(28 438 264)" fill="none" stroke="#fff0ff" stroke-width="3" opacity=".9"/>
+<!-- body -->
+<path d="M151 322 C159 286 195 270 250 272 C310 268 353 299 367 344 C379 390 354 438 307 455 C255 475 187 457 157 423 C132 395 132 354 151 322Z" fill="url(#fur)" stroke="#b18ce4" stroke-width="5"/>
+<path d="M184 359 C203 326 235 321 260 329 C293 321 327 342 337 374 C346 409 314 435 263 439 C214 439 180 413 184 359Z" fill="url(#furLight)" opacity=".65"/>
+<!-- chest tuft -->
+<path d="M196 347 C207 328 226 326 239 338 C250 318 274 321 283 340 C303 325 324 341 323 360 C314 388 290 402 260 405 C227 400 207 382 196 347Z" fill="#d6b1f0" opacity=".82"/>
+<path d="M226 345 Q234 366 250 374 Q249 352 260 342 Q271 363 284 374 Q285 352 298 346" fill="none" stroke="#f2d9ff" stroke-width="5" stroke-linecap="round" opacity=".75"/>
+<!-- head and ears -->
+<path d="M142 222 L132 83 Q131 51 154 67 L218 127 Q256 108 294 127 L359 67 Q382 50 381 83 L371 224 C366 294 323 330 256 333 C190 330 148 290 142 222Z" fill="url(#fur)" stroke="#c19ae9" stroke-width="6" stroke-linejoin="round"/>
+<!-- ear inner -->
+<path d="M153 99 L207 145 L170 218 Q155 192 153 99Z" fill="url(#ear)" stroke="#e5b5ff" stroke-width="3"/>
+<path d="M359 99 L305 145 L342 218 Q357 192 359 99Z" fill="url(#ear)" stroke="#e5b5ff" stroke-width="3"/>
+<path d="M165 119 Q178 150 187 170 M347 119 Q334 150 325 170" fill="none" stroke="#ffe1ff" stroke-width="6" stroke-linecap="round" opacity=".65"/>
+<!-- cheek tufts -->
+<path d="M158 230 Q126 228 112 249 Q133 247 144 266 Q118 266 108 287 Q146 284 164 267Z" fill="#7651aa" stroke="#b88be7" stroke-width="3"/>
+<path d="M354 230 Q386 228 400 249 Q379 247 368 266 Q394 266 404 287 Q366 284 348 267Z" fill="#7651aa" stroke="#b88be7" stroke-width="3"/>
+<!-- face mask -->
+<path d="M165 225 C183 188 216 174 256 181 C296 174 330 190 347 225 C350 269 321 305 256 311 C191 305 162 269 165 225Z" fill="#4c347d" opacity=".72"/>
+<!-- forehead rune -->
+<path d="M256 154 L273 176 L256 195 L239 176Z" fill="#f0baff" stroke="#fff0ff" stroke-width="3" filter="url(#glow)"/>
+<path d="M256 163 L265 176 L256 186 L247 176Z" fill="#fff"/>
+<!-- brows -->
+<path d="M181 210 Q204 188 231 204 M281 204 Q308 188 331 210" fill="none" stroke="#d5aaff" stroke-width="8" stroke-linecap="round"/>
+<!-- eyes -->
+<ellipse cx="207" cy="248" rx="35" ry="45" fill="#fff7ff"/>
+<ellipse cx="305" cy="248" rx="35" ry="45" fill="#fff7ff"/>
+<ellipse cx="210" cy="255" rx="27" ry="36" fill="url(#eye)"/>
+<ellipse cx="302" cy="255" rx="27" ry="36" fill="url(#eye)"/>
+<ellipse cx="210" cy="271" rx="15" ry="18" fill="#24104f"/>
+<ellipse cx="302" cy="271" rx="15" ry="18" fill="#24104f"/>
+<ellipse cx="210" cy="277" rx="8" ry="10" fill="#090a2c"/>
+<ellipse cx="302" cy="277" rx="8" ry="10" fill="#090a2c"/>
+<circle cx="197" cy="230" r="11" fill="#fff"/>
+<circle cx="290" cy="230" r="11" fill="#fff"/>
+<circle cx="222" cy="263" r="5" fill="#fff" opacity=".9"/>
+<circle cx="315" cy="263" r="5" fill="#fff" opacity=".9"/>
+<!-- muzzle and smile -->
+<ellipse cx="256" cy="286" rx="31" ry="18" fill="#a77acb" opacity=".52"/>
+<path d="M248 282 Q256 291 264 282 Q260 300 256 300 Q251 298 248 282Z" fill="#24183e"/>
+<path d="M256 300 Q244 313 232 303 M256 300 Q268 313 280 303" fill="none" stroke="#f5d7ff" stroke-width="4" stroke-linecap="round"/>
+<!-- whisker glints -->
+<path d="M178 281 L145 274 M180 294 L151 299 M334 281 L367 274 M332 294 L361 299" stroke="#dcbaff" stroke-width="3" stroke-linecap="round" opacity=".75"/>
+<!-- paws -->
+<path d="M164 403 C149 414 151 445 177 455 C194 462 214 453 219 435 L215 414Z" fill="#4b327e" stroke="#a982d9" stroke-width="4"/>
+<path d="M231 421 C220 447 235 465 258 465 C281 465 293 446 280 420Z" fill="#553787" stroke="#b38ce4" stroke-width="4"/>
+<path d="M294 415 C284 443 301 461 326 455 C349 449 351 422 333 404Z" fill="#392568" stroke="#9872c9" stroke-width="4"/>
+<path d="M177 438 Q188 445 199 437 M244 447 Q257 455 270 446 M309 438 Q321 446 334 436" fill="none" stroke="#d7b7f2" stroke-width="3" stroke-linecap="round" opacity=".65"/>
+<!-- chest charm -->
+<path d="M224 334 Q256 351 288 334" fill="none" stroke="#e8caff" stroke-width="5"/>
+<path d="M256 337 C271 350 282 361 279 374 C276 391 236 391 233 374 C230 361 241 350 256 337Z" fill="#a94fff" stroke="#f0caff" stroke-width="4" filter="url(#glow)"/>
+<path d="M256 348 L270 370 L256 383 L242 370Z" fill="#e8d5ff" stroke="#fff" stroke-width="2"/>
+<!-- fur accents -->
+<path d="M171 184 Q185 164 207 158 M304 158 Q327 166 341 186" fill="none" stroke="#d9b8ff" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+<path d="M174 332 Q187 319 201 319 M310 318 Q328 321 338 335" fill="none" stroke="#c59be9" stroke-width="4" stroke-linecap="round" opacity=".6"/>
 </svg>
