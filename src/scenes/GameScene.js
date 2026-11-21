@@ -109,6 +109,7 @@ export class GameScene extends Phaser.Scene {
     this.input.on("pointerup", this.handlePointerUp, this);
     this.input.on("pointerupoutside", this.handlePointerUp, this);
     this.input.on("gameout", this.handleAllPointersUp, this);
+    this.input.on("pointermove", this.handleLampPointerMove, this);
     this.input.on("drag", this.handleLampDrag, this);
     this.input.on("dragend", this.handleLampDragEnd, this);
     this.cleanupHandlers.push(
