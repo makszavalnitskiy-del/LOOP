@@ -123,9 +123,13 @@ export class ShadowProjection {
     return scan(increment) ?? (increment === 1 ? null : scan(1));
   }
 
-  static findSensorPosition({ bounds, obstacles, groundY, sensor, worldWidth, step = 2 }) {
+  static findSensorPosition({
+    bounds, obstacles, groundY, sensor, worldWidth,
+    gapStart = 0, gapEnd = worldWidth, requireFullCoverage = false, step = 2
+  }) {
     if (!bounds || !Array.isArray(obstacles) || !sensor ||
-        !Number.isFinite(groundY) || !Number.isFinite(worldWidth) || worldWidth <= 0) return null;
+        !Number.isFinite(groundY) || !Number.isFinite(worldWidth) || worldWidth <= 0 ||
+        !Number.isFinite(gapStart) || !Number.isFinite(gapEnd) || gapEnd <= gapStart) return null;
     const increment = Math.max(1, Number(step) || 1);
     const scan = stride => {
       for (let y = bounds.minY; y <= bounds.maxY; y += stride) {
@@ -136,10 +140,12 @@ export class ShadowProjection {
               lightY: y,
               obstacle,
               groundY,
-              gapStart: 0,
-              gapEnd: worldWidth
+              gapStart,
+              gapEnd
             });
-            if (projection.polygon.length && this.intersectsRect(projection.polygon, sensor)) {
+            if (projection.polygon.length &&
+                (!requireFullCoverage || projection.fullCoverage) &&
+                this.intersectsRect(projection.polygon, sensor)) {
               return { x, y, obstacleId: obstacle.id ?? null, projection };
             }
           }
