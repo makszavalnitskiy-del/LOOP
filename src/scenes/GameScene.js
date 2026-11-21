@@ -115,6 +115,7 @@ export class GameScene extends Phaser.Scene {
       ["pointerup", this.handlePointerUp],
       ["pointerupoutside", this.handlePointerUp],
       ["gameout", this.handleAllPointersUp],
+      ["pointermove", this.handleLampPointerMove],
       ["drag", this.handleLampDrag],
       ["dragend", this.handleLampDragEnd]
     );
@@ -282,10 +283,15 @@ export class GameScene extends Phaser.Scene {
     lampGraphic.lineStyle(1, 0xffffff, 0.7); lampGraphic.strokeCircle(0, 0, 27);
     this.lamp.add(lampGraphic);
     this.lamp.setSize(58, 58);
-    this.lamp.setInteractive(new Phaser.Geom.Circle(0, 0, 29), Phaser.Geom.Circle.Contains);
+    // Generous circular hit area: the bright center and the whole orb are easy to grab.
+    this.lamp.setInteractive(new Phaser.Geom.Circle(0, 0, 46), Phaser.Geom.Circle.Contains);
     this.input.setDraggable(this.lamp);
     this.lampDragPointerId = null;
-    this.lamp.on("pointerdown", pointer => { this.lampDragPointerId = pointer.id; this.soundFX?.beginLampFeedback?.(); });
+    this.lamp.on("pointerdown", pointer => {
+      if (this.transitioning || this.dead || this.completed) return;
+      this.lampDragPointerId = pointer.id;
+      this.soundFX?.beginLampFeedback?.();
+    });
     this.lamp.on("pointerup", pointer => { if (this.lampDragPointerId === pointer.id) this.lampDragPointerId = null; });
     this.lamp.on("pointerupoutside", pointer => { if (this.lampDragPointerId === pointer.id) { this.lampDragPointerId = null; this.soundFX?.stopLampFeedback?.(); } });
     this.rayGraphics = this.add.graphics().setDepth(10);
@@ -447,19 +453,31 @@ export class GameScene extends Phaser.Scene {
     this.soundFX?.stopLampFeedback?.();
   }
 
-  handleLampDrag(pointer, gameObject, dragX, dragY) {
-    if (gameObject !== this.lamp || this.transitioning || this.dead || this.completed) return;
-    this.soundFX?.beginLampFeedback?.();
-    if (this.lampDragPointerId !== null && pointer.id !== this.lampDragPointerId) return;
-    this.lampDragPointerId = pointer.id;
+  moveLampTo(x, y) {
+    if (this.transitioning || this.dead || this.completed || !this.lampBounds) return;
     this.lamp.setPosition(
-      Phaser.Math.Clamp(dragX, this.lampBounds.minX, this.lampBounds.maxX),
-      Phaser.Math.Clamp(dragY, this.lampBounds.minY, this.lampBounds.maxY)
+      Phaser.Math.Clamp(x, this.lampBounds.minX, this.lampBounds.maxX),
+      Phaser.Math.Clamp(y, this.lampBounds.minY, this.lampBounds.maxY)
     );
     this.lampGlow.setPosition(this.lamp.x, this.lamp.y);
     this.updateAllBridges();
     const coverage = this.bridges.reduce((maximum, item) => Math.max(maximum, Number(item.shadow?.coverage) || 0), 0);
     this.soundFX?.updateLampFeedback?.(coverage);
+  }
+
+  // Pointer movement is handled directly so dragging works even when the pointer
+  // starts exactly on the luminous core and Phaser's drag threshold is not crossed.
+  handleLampPointerMove(pointer) {
+    if (this.lampDragPointerId !== pointer.id || this.transitioning || this.dead || this.completed) return;
+    this.moveLampTo(pointer.worldX, pointer.worldY);
+  }
+
+  handleLampDrag(pointer, gameObject, dragX, dragY) {
+    if (gameObject !== this.lamp || this.transitioning || this.dead || this.completed) return;
+    if (this.lampDragPointerId !== null && pointer.id !== this.lampDragPointerId) return;
+    this.lampDragPointerId = pointer.id;
+    this.soundFX?.beginLampFeedback?.();
+    this.moveLampTo(dragX, dragY);
   }
 
   handleLampDragEnd(pointer, gameObject) {
