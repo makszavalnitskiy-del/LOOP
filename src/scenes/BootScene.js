@@ -32,8 +32,8 @@ export class BootScene extends Phaser.Scene {
       if (file?.key === "arzon" || file?.key === "pushi") this.createFallbackTexture(file.key);
       console.warn("[LOOP] Не удалось загрузить ресурс:", file?.key ?? file);
     });
-    this.load.svg("arzon", "assets/characters/arzon.svg", { width: 256, height: 256 });
-    this.load.svg("pushi", "assets/characters/pushi.svg", { width: 256, height: 256 });
+    this.load.svg("arzon", "assets/characters/arzon.svg", { width: 512, height: 512 });
+    this.load.svg("pushi", "assets/characters/pushi.svg", { width: 512, height: 512 });
   }
 
   create() {
