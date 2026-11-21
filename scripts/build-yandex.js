@@ -6,14 +6,18 @@ import { spawnSync } from "node:child_process";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dist = path.join(root, "dist");
 const archive = path.join(root, "loop-yandex.zip");
+const phaserSource = path.join(root, "node_modules", "phaser", "dist", "phaser.min.js");
+const phaserTarget = path.join(root, "vendor", "phaser.min.js");
+if (!fs.existsSync(phaserTarget) && fs.existsSync(phaserSource)) {
+  fs.mkdirSync(path.dirname(phaserTarget), { recursive: true });
+  fs.copyFileSync(phaserSource, phaserTarget);
+}
 const required = [
   "index.html",
   "style.css",
   "src",
   "assets",
-  "vendor/phaser.min.js",
-  "assets/fonts/Nunito-Regular.woff2",
-  "assets/fonts/Nunito-Bold.woff2"
+  "vendor/phaser.min.js"
 ];
 const excluded = new Set([".git", "node_modules", "tests", "README.md", "package.json", "package-lock.json", "dist", "loop-yandex.zip"]);
 
@@ -36,7 +40,7 @@ const missing = required.filter(item => !exists(item));
 if (missing.length) {
   console.error("Yandex build stopped. Required local files are missing:");
   for (const item of missing) console.error(" - " + item);
-  console.error("Add the official Phaser 3.80.1 browser build and the two Nunito WOFF2 files, then run npm run build:yandex again.");
+  console.error("Run npm install to fetch the pinned Phaser 3.80.1 runtime, then run npm run build:yandex again.");
   process.exitCode = 1;
 } else {
   fs.rmSync(dist, { recursive: true, force: true });
