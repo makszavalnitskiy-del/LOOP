@@ -220,6 +220,42 @@ test("level 20 is a bespoke three-act finale with two bridges and two gated sens
   assert.ok(finale.obstacles.some(item => item.id === "heart-barrier" && item.sensorId === "heart-sensor"));
 });
 
+test("the memory sensor sits beyond its patrol crystal and stays inside its shadow", () => {
+  const finale = getLevelById(20);
+  const crystal = crystalsFor(finale).find(item => item.id === "memory-crystal");
+  const sensor = finale.sensors.find(item => item.id === "memory-sensor");
+  const overlapsCrystal =
+    sensor.x < crystal.x + crystal.width &&
+    sensor.x + sensor.width > crystal.x &&
+    sensor.y < crystal.y + crystal.height &&
+    sensor.y + sensor.height > crystal.y;
+  assert.equal(overlapsCrystal, false, "sensor must not overlap the crystal body");
+
+  for (const crystalX of [crystal.patrol.min, crystal.patrol.start, crystal.patrol.max]) {
+    const projection = ShadowProjection.calculate({
+      lightX: finale.lampStart.x,
+      lightY: finale.lampStart.y,
+      obstacle: { ...crystal, x: crystalX },
+      groundY: finale.world.groundY,
+      gapStart: finale.gaps[0].x,
+      gapEnd: finale.gaps[0].x + finale.gaps[0].width
+    });
+    assert.equal(ShadowProjection.intersectsRect(projection.polygon, sensor), true,
+      `memory sensor must remain in the moving crystal shadow at x=${crystalX}`);
+  }
+
+  const settledProjection = ShadowProjection.calculate({
+    lightX: finale.lampStart.x,
+    lightY: finale.lampStart.y,
+    obstacle: { ...crystal, x: crystal.patrol.start },
+    groundY: finale.world.groundY,
+    gapStart: finale.gaps[0].x,
+    gapEnd: finale.gaps[0].x + finale.gaps[0].width
+  });
+  assert.equal(settledProjection.fullCoverage, true,
+    "the crystal must form a stable bridge after the act-I patrol ends");
+});
+
 test("finale sensor hints are projected from their assigned crystals", () => {
   const finale = getLevelById(20);
   for (const sensor of finale.sensors) {
