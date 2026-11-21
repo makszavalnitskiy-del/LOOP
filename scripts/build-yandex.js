@@ -8,6 +8,13 @@ const dist = path.join(root, "dist");
 const archive = path.join(root, "loop-yandex.zip");
 const phaserSource = path.join(root, "node_modules", "phaser", "dist", "phaser.min.js");
 const phaserTarget = path.join(root, "vendor", "phaser.min.js");
+const nunitoPackage = path.join(root, "node_modules", "@fontsource-variable", "nunito");
+const nunitoTarget = path.join(root, "assets", "fonts", "fontsource");
+if (!fs.existsSync(path.join(nunitoTarget, "wght.css")) && fs.existsSync(path.join(nunitoPackage, "wght.css"))) {
+  fs.mkdirSync(nunitoTarget, { recursive: true });
+  fs.copyFileSync(path.join(nunitoPackage, "wght.css"), path.join(nunitoTarget, "wght.css"));
+  fs.cpSync(path.join(nunitoPackage, "files"), path.join(nunitoTarget, "files"), { recursive: true });
+}
 if (!fs.existsSync(phaserTarget) && fs.existsSync(phaserSource)) {
   fs.mkdirSync(path.dirname(phaserTarget), { recursive: true });
   fs.copyFileSync(phaserSource, phaserTarget);
@@ -17,7 +24,8 @@ const required = [
   "style.css",
   "src",
   "assets",
-  "vendor/phaser.min.js"
+  "vendor/phaser.min.js",
+  "assets/fonts/fontsource/wght.css"
 ];
 const excluded = new Set([".git", "node_modules", "tests", "README.md", "package.json", "package-lock.json", "dist", "loop-yandex.zip"]);
 
@@ -40,7 +48,7 @@ const missing = required.filter(item => !exists(item));
 if (missing.length) {
   console.error("Yandex build stopped. Required local files are missing:");
   for (const item of missing) console.error(" - " + item);
-  console.error("Run npm install to fetch the pinned Phaser 3.80.1 runtime, then run npm run build:yandex again.");
+  console.error("Run npm install to fetch the pinned Phaser 3.80.1 and Nunito 5.3.0 packages, then run npm run build:yandex again.");
   process.exitCode = 1;
 } else {
   fs.rmSync(dist, { recursive: true, force: true });
