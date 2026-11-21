@@ -160,8 +160,8 @@ export class MenuScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.ui.add([title, subtitle]);
 
-    const arzon = this.add.image(centerX - 105, 158, "arzon").setDisplaySize(59, 89);
-    const pushi = this.add.image(centerX + 105, 163, "pushi").setDisplaySize(49, 54);
+    const arzon = this.add.image(centerX - 105, 158, "arzon").setDisplaySize(39.3, 59.3);
+    const pushi = this.add.image(centerX + 105, 163, "pushi").setDisplaySize(32.7, 36);
     this.ui.add([arzon, pushi]);
     this.tweens.add({ targets: arzon, y: 151, duration: 1200, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.tweens.add({ targets: pushi, y: 165, angle: { from: -3, to: 3 }, duration: 1400, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
