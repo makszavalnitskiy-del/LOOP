@@ -87,6 +87,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, world.width, world.height);
     this.createBackdrop();
     this.createWorldGeometry();
+    this.createWorldDecoration();
     this.createObstacles();
     this.createSensors();
     this.createLamp();
@@ -170,6 +171,33 @@ export class GameScene extends Phaser.Scene {
       mist.fillStyle(i % 2 ? 0x7256d8 : 0x4c9bd0, 0.035);
       mist.fillEllipse(i * width / 7, 420 + Math.sin(i) * 22, 300, 74);
     }
+    const chapterIndex = Phaser.Math.Clamp(Math.ceil(this.level.id / 5) - 1, 0, 3);
+    const chapterAccent = [0x62dff5, 0x9b83ff, 0xd47aff, 0xffd28a][chapterIndex];
+    const ancientSigil = this.add.graphics().setDepth(-19).setScrollFactor(0.16, 0.28);
+    ancientSigil.lineStyle(2, chapterAccent, 0.13);
+    ancientSigil.strokeCircle(width * 0.72, 292, 126);
+    ancientSigil.lineStyle(1, chapterAccent, 0.09);
+    ancientSigil.strokeCircle(width * 0.72, 292, 164);
+    ancientSigil.lineBetween(width * 0.72 - 184, 292, width * 0.72 + 184, 292);
+    ancientSigil.lineBetween(width * 0.72, 108, width * 0.72, 476);
+    ancientSigil.lineStyle(3, chapterAccent, 0.08);
+    ancientSigil.strokeCircle(width * 0.72, 292, 76);
+    const monoliths = this.add.graphics().setDepth(-14).setScrollFactor(0.42, 0.58);
+    for (let i = 0; i < 7; i++) {
+      const x = 70 + i * (width / 6);
+      const h = 90 + ((i * 47 + this.level.id * 13) % 105);
+      monoliths.fillStyle(chapterIndex % 2 ? 0x29204f : 0x1b3150, 0.24);
+      monoliths.fillPoints([
+        new Phaser.Geom.Point(x - 18, 432),
+        new Phaser.Geom.Point(x - 10, 432 - h),
+        new Phaser.Geom.Point(x + 10, 432 - h - 18),
+        new Phaser.Geom.Point(x + 24, 432)
+      ], true);
+      monoliths.lineStyle(1, chapterAccent, 0.16);
+      monoliths.lineBetween(x + 1, 432 - h + 12, x + 1, 432 - 12);
+      monoliths.fillStyle(chapterAccent, 0.16);
+      monoliths.fillCircle(x + 1, 432 - h + 18, 2.2);
+    }
     const stars = this.add.graphics().setDepth(-15);
     for (let i = 0; i < Math.ceil(width / 12); i++) {
       const x = Phaser.Math.Between(0, width);
@@ -212,6 +240,58 @@ export class GameScene extends Phaser.Scene {
     this.worldGroundY = groundY;
   }
 
+  createWorldDecoration() {
+    const graphics = this.add.graphics().setDepth(3.5);
+    const chapterIndex = Phaser.Math.Clamp(Math.ceil(this.level.id / 5) - 1, 0, 3);
+    const accent = [0x62dff5, 0x9b83ff, 0xd47aff, 0xffd28a][chapterIndex];
+    const groundY = this.worldGroundY;
+    for (const platform of this.level.platforms ?? []) {
+      const left = platform.x;
+      const right = platform.x + platform.width;
+      graphics.lineStyle(1, 0x91a9ed, 0.14);
+      graphics.lineBetween(left + 8, groundY + 18, right - 8, groundY + 18);
+      graphics.lineStyle(1, 0x7186ca, 0.12);
+      graphics.lineBetween(left + 12, groundY + 54, right - 12, groundY + 54);
+      graphics.lineBetween(left + 12, groundY + 82, right - 12, groundY + 82);
+      for (let x = left + 34; x < right - 18; x += 112) {
+        const seed = Math.floor(x / 112) + this.level.id * 3;
+        graphics.lineStyle(1, accent, 0.18);
+        graphics.lineBetween(x, groundY + 24, x, groundY + 38 + (seed % 3) * 5);
+        graphics.lineBetween(x - 5, groundY + 30, x + 5, groundY + 30);
+        graphics.fillStyle(accent, 0.28);
+        graphics.fillCircle(x, groundY + 22, 1.6);
+        if (seed % 2 === 0) {
+          graphics.lineStyle(1, 0x8296d8, 0.13);
+          graphics.lineBetween(x + 20, groundY + 64, x + 31, groundY + 58);
+          graphics.lineBetween(x + 31, groundY + 58, x + 42, groundY + 67);
+        }
+      }
+      graphics.lineStyle(2, accent, 0.22);
+      graphics.lineBetween(left + 4, groundY + 4, left + 4, groundY + 30);
+      graphics.lineBetween(right - 4, groundY + 4, right - 4, groundY + 30);
+      graphics.fillStyle(accent, 0.16);
+      graphics.fillTriangle(left + 4, groundY + 5, left + 18, groundY + 5, left + 4, groundY + 19);
+      graphics.fillTriangle(right - 4, groundY + 5, right - 18, groundY + 5, right - 4, groundY + 19);
+    }
+    for (const gap of this.gaps) {
+      const center = gap.x + gap.width / 2;
+      graphics.fillStyle(0x050714, 0.28);
+      graphics.fillTriangle(gap.x + 8, groundY + 8, center, groundY + 88, gap.x + gap.width - 8, groundY + 8);
+      for (let index = 0; index < 5; index++) {
+        const x = gap.x + 18 + index * Math.max(18, (gap.width - 36) / 4);
+        const depth = 28 + ((index * 19 + this.level.id * 7) % 54);
+        graphics.lineStyle(1, accent, 0.13 + (index % 2) * 0.04);
+        graphics.lineBetween(x, groundY + 12, x + (index % 2 ? 7 : -6), groundY + depth);
+        graphics.fillStyle(accent, 0.16);
+        graphics.fillCircle(x, groundY + depth, 1.5);
+      }
+      graphics.lineStyle(2, accent, 0.2);
+      graphics.lineBetween(gap.x + 4, groundY + 4, gap.x + 18, groundY + 4);
+      graphics.lineBetween(gap.x + gap.width - 18, groundY + 4, gap.x + gap.width - 4, groundY + 4);
+    }
+    this.groundDecoration = graphics;
+  }
+
   createObstacles() {
     this.obstacles = [];
     this.bridges = [];
@@ -220,10 +300,47 @@ export class GameScene extends Phaser.Scene {
       const color = data.color ?? (data.type === "crystal" ? 0x70eaff : 0x9a6cff);
       const art = this.add.rectangle(
         data.x + data.width / 2, data.y + data.height / 2,
-        data.width, data.height, color, data.type === "crystal" ? 0.72 : 0.55
-      ).setStrokeStyle(2, color, 0.95).setDepth(7);
-      const core = this.add.rectangle(art.x, art.y, data.width * 0.62, data.height * 0.58, 0xd9faff, 0.12)
-        .setStrokeStyle(1, 0xc5faff, 0.32).setDepth(8);
+        data.width, data.height, color, data.type === "crystal" ? 0.12 : 0.55
+      ).setStrokeStyle(data.type === "crystal" ? 1 : 2, color, data.type === "crystal" ? 0.2 : 0.95).setDepth(7);
+      const core = this.add.rectangle(art.x, art.y, data.width * 0.62, data.height * 0.58, 0xd9faff, 0.06)
+        .setStrokeStyle(1, 0xc5faff, 0.18).setDepth(8);
+      const detail = this.add.graphics().setPosition(art.x, art.y).setDepth(9);
+      if (data.type === "crystal") {
+        const halfW = data.width * 0.48;
+        const halfH = data.height * 0.5;
+        detail.fillStyle(color, 0.22);
+        detail.beginPath();
+        detail.moveTo(0, -halfH);
+        detail.lineTo(halfW * 0.82, -halfH * 0.3);
+        detail.lineTo(halfW, halfH * 0.18);
+        detail.lineTo(0, halfH);
+        detail.lineTo(-halfW, halfH * 0.18);
+        detail.lineTo(-halfW * 0.82, -halfH * 0.3);
+        detail.closePath();
+        detail.fillPath();
+        detail.lineStyle(2, 0xdafaff, 0.82);
+        detail.strokePath();
+        detail.fillStyle(0xf4ffff, 0.24);
+        detail.fillTriangle(0, -halfH + 5, halfW * 0.68, -halfH * 0.28, 0, halfH * 0.08);
+        detail.fillStyle(0x172b58, 0.22);
+        detail.fillTriangle(0, halfH * 0.08, halfW, halfH * 0.18, 0, halfH - 3);
+        detail.lineStyle(1, 0xffffff, 0.42);
+        detail.lineBetween(0, -halfH + 5, 0, halfH - 4);
+        detail.lineBetween(-halfW * 0.48, -halfH * 0.12, 0, halfH * 0.08);
+        detail.lineBetween(halfW * 0.48, -halfH * 0.12, 0, halfH * 0.08);
+        detail.fillStyle(0xffffff, 0.78);
+        detail.fillCircle(-halfW * 0.3, -halfH * 0.2, 2);
+        detail.fillCircle(halfW * 0.3, -halfH * 0.2, 2);
+      } else {
+        detail.fillStyle(color, 0.12);
+        detail.fillRect(-data.width / 2, -data.height / 2, data.width, data.height);
+        detail.lineStyle(1, 0xffd5f6, 0.5);
+        for (let stripeY = -data.height / 2 + 12; stripeY < data.height / 2; stripeY += 22) {
+          detail.lineBetween(-data.width / 2, stripeY, data.width / 2, stripeY + 10);
+        }
+        detail.lineStyle(1, 0xffffff, 0.24);
+        detail.lineBetween(0, -data.height / 2, 0, data.height / 2);
+      }
       const halo = this.add.circle(art.x, art.y, Math.max(data.width, data.height) * 0.58, color, 0.07).setDepth(6);
       this.tweens.add({ targets: halo, alpha: { from: 0.035, to: 0.13 }, scale: { from: 0.86, to: 1.12 }, duration: 1300, yoyo: true, repeat: -1 });
       let physicsBody = null;
@@ -234,7 +351,7 @@ export class GameScene extends Phaser.Scene {
         physicsBody.setImmovable(true);
         physicsBody.setSize(data.width, data.height);
       }
-      const obstacle = { data, art, core, halo, physicsBody, x: data.x, y: data.y, width: data.width, height: data.height, direction: data.patrol?.direction ?? 1 };
+      const obstacle = { data, art, core, detail, halo, physicsBody, x: data.x, y: data.y, width: data.width, height: data.height, direction: data.patrol?.direction ?? 1 };
       this.obstacles.push(obstacle);
       if (data.type === "crystal") {
         const bridgeNumber = Number(String(data.bridgeId ?? "").match(/(\d+)$/)?.[1]);
@@ -372,13 +489,24 @@ export class GameScene extends Phaser.Scene {
         color: "#ffd99a", stroke: "#17102f", strokeThickness: 3
       }).setOrigin(0.5));
     }
+    this.createHudButton(width / 2 - 150, 30, 88, 30, "ПОДСКАЗКА", () => this.showGameplayHint());
     if (this.level.id === 3) {
-      this.lampFocusButton = this.createHudButton(width / 2, 30, 76, 30, "СВЕТ", () => this.toggleLampFocus());
+      this.lampFocusButton = this.createHudButton(width / 2 - 48, 30, 76, 30, "СВЕТ", () => this.toggleLampFocus());
     }
-    this.createHudButton(width - 278, 30, 76, 30, "РЕСТАРТ", () => this.restartLevel());
-    this.createHudButton(width - 190, 30, 68, 30, "МЕНЮ", () => this.returnToMenu());
-    this.createHudButton(width - 112, 30, 76, 30, "ПАУЗА", () => this.togglePause());
-    this.muteHudButton = this.createHudButton(width - 28, 30, 70, 30, this.getMuteLabel(), () => {
+    this.shadowStatusText = this.add.text(width / 2 + 74, 30, "ПУТЬ 0/" + this.bridges.length, {
+      fontFamily: "Nunito, sans-serif", fontSize: "9px", fontStyle: "900", color: "#8da8dd"
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(52);
+    this.hud.add(this.shadowStatusText);
+    this.hintText = this.add.text(width / 2, this.scale.height - 24, "", {
+      fontFamily: "Nunito, sans-serif", fontSize: "11px", fontStyle: "900",
+      color: "#e8faff", backgroundColor: "#0b1230cc", padding: { x: 12, y: 7 },
+      align: "center", wordWrap: { width: Math.min(720, width - 48) }
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(58).setAlpha(0);
+    this.hud.add(this.hintText);
+    this.createHudButton(width - 310, 30, 76, 30, "РЕСТАРТ", () => this.restartLevel());
+    this.createHudButton(width - 222, 30, 68, 30, "МЕНЮ", () => this.returnToMenu());
+    this.createHudButton(width - 140, 30, 76, 30, "ПАУЗА", () => this.togglePause());
+    this.muteHudButton = this.createHudButton(width - 54, 30, 72, 30, this.getMuteLabel(), () => {
       this.soundFX?.toggleMute?.();
       this.muteHudButton?.label.setText(this.getMuteLabel());
     });
@@ -418,12 +546,56 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  showGameplayHint() {
+    if (!this.hintText || this.transitioning || this.dead || this.completed) return;
+    const steps = this.level.hintSteps ?? (this.level.hintPosition
+      ? [{ ...this.level.hintPosition, action: "build-bridge", gapId: this.level.gaps[0]?.id }]
+      : []);
+    const pendingSensor = (this.sensorObjects ?? []).find(sensor =>
+      !sensor.challengeComplete && (!sensor.activated || sensor.data.holdToMaintain)
+    );
+    let message = "";
+
+    if (pendingSensor) {
+      const step = steps.find(item => item.action === "charge-sensor" && item.sensorId === pendingSensor.data.id);
+      if (step) {
+        message = pendingSensor.data.requiresJump
+          ? `ПУШИ ЖДЁТ ТВОЕГО ПРЫЖКА. УДЕРЖИ ТЕНЬ НА СЕНСОРЕ · СВЕТ X:${Math.round(step.x)} Y:${Math.round(step.y)}`
+          : `НАПРАВЬ ТЕНЬ НА СЕНСОР ${pendingSensor.data.id.toUpperCase()} · СВЕТ X:${Math.round(step.x)} Y:${Math.round(step.y)}`;
+      }
+    }
+
+    if (!message) {
+      const nextBridge = this.bridges.find(item => !this.crossedBridges.has(item.id));
+      if (!nextBridge) {
+        message = "ОТЛИЧНО. ВСЕ МОСТЫ ПРОЙДЕНЫ — ИЩИ ПОРТАЛ.";
+      } else if (nextBridge.active) {
+        message = "МОСТ УЖЕ СОЗДАН. ПЕРЕЙДИ ПО НЕМУ ДО ДРУГОГО БЕРЕГА.";
+      } else {
+        const step = steps.find(item => item.action === "build-bridge" && item.gapId === nextBridge.gap.id);
+        if (step) {
+          const crystal = this.obstacles.find(item => item.data.id === nextBridge.obstacleId);
+          message = crystal?.data.patrol
+            ? `ПОЙМАЙ МОМЕНТ, КОГДА КРИСТАЛЛ ЗАМРЁТ В УДОБНОЙ ТОЧКЕ · СВЕТ X:${Math.round(step.x)} Y:${Math.round(step.y)}`
+            : `ПЕРЕМЕСТИ ЛАМПУ В ТОЧКУ X:${Math.round(step.x)} Y:${Math.round(step.y)} — ТЕНЬ СОЕДИНИТ БЕРЕГА.`;
+        } else {
+          message = this.level.texts?.crystalHint ?? "ИЗМЕНИ ПОЛОЖЕНИЕ ЛАМПЫ, ЧТОБЫ ИЗМЕНИТЬ ТЕНЬ.";
+        }
+      }
+    }
+
+    this.tweens.killTweensOf(this.hintText);
+    this.hintText.setText(message).setAlpha(1);
+    this.tweens.add({ targets: this.hintText, alpha: 0, delay: 6200, duration: 500, ease: "Sine.easeIn" });
+  }
+
   getMuteLabel() {
     return this.soundFX?.isMuted?.() ? "ЗВУК: ВЫКЛ" : "ЗВУК: ВКЛ";
   }
 
   createTouchControls() {
     this.touchControls = [];
+    if (!this.sys.game.device.input.touch) return;
     const addControl = (x, y, label, action, width = 58) => {
       const graphic = this.add.graphics().setScrollFactor(0).setDepth(51);
       graphic.fillStyle(0x20295b, 0.72); graphic.fillCircle(x, y, width / 2);
@@ -576,6 +748,7 @@ export class GameScene extends Phaser.Scene {
           target.open = open;
           target.art.setAlpha(open ? 0.12 : 1);
           target.core.setAlpha(open ? 0.05 : 0.12);
+          target.detail?.setAlpha(open ? 0.12 : 1);
           target.halo.setAlpha(open ? 0.02 : 0.07);
           if (target.physicsBody) target.physicsBody.enable = !open;
         }
@@ -600,6 +773,7 @@ export class GameScene extends Phaser.Scene {
           target.open = true;
           target.art.setAlpha(0.12);
           target.core.setAlpha(0.05);
+          target.detail?.setAlpha(0.12);
           target.halo.setAlpha(0.02);
           if (target.physicsBody) target.physicsBody.enable = false;
         }
@@ -623,6 +797,7 @@ export class GameScene extends Phaser.Scene {
     crystal.data.movable = false;
     crystal.data.patrol = null;
     crystal.art.setPosition(crystal.x + crystal.width / 2, crystal.y + crystal.height / 2);
+    crystal.detail?.setPosition(crystal.art.x, crystal.art.y);
     crystal.core.setPosition(crystal.art.x, crystal.art.y);
     crystal.halo.setPosition(crystal.art.x, crystal.art.y);
     this.updateAllBridges();
@@ -750,6 +925,7 @@ export class GameScene extends Phaser.Scene {
       obstacle.art.setPosition(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2);
       if (obstacle.physicsBody) obstacle.physicsBody.updateFromGameObject();
       obstacle.core.setPosition(obstacle.art.x, obstacle.art.y);
+      obstacle.detail?.setPosition(obstacle.art.x, obstacle.art.y);
       obstacle.halo.setPosition(obstacle.art.x, obstacle.art.y);
     }
   }
@@ -843,12 +1019,21 @@ export class GameScene extends Phaser.Scene {
     this.updateSensors(safeDelta);
     this.updatePlayerMovement(time);
     this.updateBridgeProgress();
+    this.updateShadowStatus();
     this.updateFinalAct();
     this.updateCharacterVisuals(time);
     this.updateLightAtmosphere(time);
     this.updateLandingDust(safeDelta);
     this.checkDeath();
     this.checkPortal();
+  }
+
+  updateShadowStatus() {
+    if (!this.shadowStatusText) return;
+    const crossed = this.crossedBridges?.size ?? 0;
+    const total = this.bridges?.length ?? 0;
+    this.shadowStatusText.setText("ПУТЬ " + crossed + "/" + total);
+    this.shadowStatusText.setColor(crossed >= total ? "#9fffd8" : "#8da8dd");
   }
 
   updatePlayerMovement(time) {
