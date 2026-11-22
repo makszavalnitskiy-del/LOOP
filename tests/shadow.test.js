@@ -184,6 +184,18 @@ test("every sensor on levels 4 and 6 intersects at least one projected crystal s
   }
 });
 
+test("level 3 second barrier patrols vertically and never clips into the floor", () => {
+  const level = getLevelById(3);
+  const barrier = level.obstacles.find(item => item.id === "barrier-2");
+  assert.ok(barrier, "level 3 must contain its second barrier");
+  assert.equal(barrier.patrol.axis, "y", "the second barrier must move up and down");
+  assert.equal(barrier.patrol.min, 150);
+  assert.equal(barrier.patrol.max, 390);
+  assert.equal(barrier.patrol.start, 290);
+  assert.ok(barrier.patrol.max + barrier.height <= level.world.groundY,
+    "the barrier must stay above the floor throughout its vertical patrol");
+});
+
 test("moving obstacle patrols remain inside their declared ranges", () => {
   for (const level of LEVELS) {
     for (const obstacle of level.obstacles) {
