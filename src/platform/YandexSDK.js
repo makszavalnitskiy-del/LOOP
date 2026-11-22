@@ -82,8 +82,31 @@ class YandexSDKManager {
       if (typeof console !== "undefined") console.warn("[LOOP] Yandex SDK unavailable; local Mock mode enabled.", error);
     }
     this.initialized = true;
+    this.requestLandscapeOrientation();
     await this.loadProgress();
     return this;
+  }
+
+  requestLandscapeOrientation() {
+    // Yandex Games can lock the game's orientation in its mobile container.
+    try {
+      const orientation = this.sdk?.screen?.orientation;
+      const result = orientation?.set?.("landscape");
+      if (result?.catch) result.catch(() => {});
+    } catch {}
+
+    // Browsers that support the Screen Orientation API may allow a lock
+    // after entering fullscreen or after the first user interaction.
+    const host = typeof window !== "undefined" ? window : null;
+    const requestBrowserLock = () => {
+      try {
+        const result = host?.screen?.orientation?.lock?.("landscape");
+        if (result?.catch) result.catch(() => {});
+      } catch {}
+    };
+    requestBrowserLock();
+    host?.addEventListener?.("pointerdown", requestBrowserLock, { once: true, passive: true });
+    host?.addEventListener?.("keydown", requestBrowserLock, { once: true });
   }
 
   async ready() {
