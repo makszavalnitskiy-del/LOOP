@@ -79,7 +79,7 @@ export const LEVELS = [
     obstacles: [
       { id: "crystal-1", type: "crystal", x: 280, y: 340, width: 100, height: 68, color: 0x70eaff, movable: true, patrol: { axis: "x", min: 230, max: 360, speed: 72, start: 280, direction: 1 }, bridgeId: "bridge-1" },
       { id: "crystal-2", type: "crystal", x: 750, y: 325, width: 100, height: 74, color: 0xc18cff, movable: true, patrol: { axis: "y", min: 285, max: 375, speed: 54, start: 325, direction: -1 }, bridgeId: "bridge-2" },
-      { id: "barrier-1", type: "barrier", x: 500, y: 275, width: 26, height: 221, color: 0x9a6cff, movable: true, patrol: { axis: "y", min: 245, max: 390, speed: 82, start: 275, direction: 1 } },
+      { id: "barrier-1", type: "barrier", x: 500, y: 275, width: 26, height: 221, color: 0x9a6cff, movable: true, patrol: { axis: "y", min: 150, max: 390, speed: 82, start: 275, direction: 1 } },
       { id: "barrier-2", type: "barrier", x: 1000, y: 290, width: 26, height: 206, color: 0x9a6cff, movable: true, patrol: { axis: "x", min: 950, max: 1060, speed: 64, start: 1000, direction: -1 } }
     ],
     sensors: [],
