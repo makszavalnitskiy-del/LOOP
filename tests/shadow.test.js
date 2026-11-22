@@ -190,8 +190,8 @@ test("level 3 second barrier patrols vertically and never clips into the floor",
   assert.ok(barrier, "level 3 must contain its second barrier");
   assert.equal(barrier.patrol.axis, "y", "the second barrier must move up and down");
   assert.equal(barrier.patrol.min, 150);
-  assert.equal(barrier.patrol.max, 390);
-  assert.equal(barrier.patrol.start, 290);
+  assert.equal(barrier.patrol.max, 285);
+  assert.equal(barrier.patrol.start, 275);
   assert.ok(barrier.patrol.max + barrier.height <= level.world.groundY,
     "the barrier must stay above the floor throughout its vertical patrol");
 });
