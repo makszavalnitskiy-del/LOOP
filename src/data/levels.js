@@ -1,10 +1,14 @@
 import { ShadowProjection } from "../mechanics/shadows/ShadowProjection.js";
 
 export const CHAPTERS = [
-  { id: 1, key: "awakening", title: "Пробуждение света", firstLevel: 1, lastLevel: 5 },
-  { id: 2, key: "echoes", title: "Эхо прошлого", firstLevel: 6, lastLevel: 10 },
-  { id: 3, key: "fracture", title: "Разлом цикла", firstLevel: 11, lastLevel: 15 },
-  { id: 4, key: "final-cycle", title: "Последний цикл", firstLevel: 16, lastLevel: 20 }
+  { id: 1, key: "awakening", title: "Пробуждение света", firstLevel: 1, lastLevel: 5,
+    theme: { accent: 0x62dff5, secondary: 0x9bdff0, silhouette: 0x18334d, architecture: "sanctuary" } },
+  { id: 2, key: "echoes", title: "Эхо прошлого", firstLevel: 6, lastLevel: 10,
+    theme: { accent: 0x9b83ff, secondary: 0xc4a6ff, silhouette: 0x29204f, architecture: "resonance" } },
+  { id: 3, key: "fracture", title: "Разлом цикла", firstLevel: 11, lastLevel: 15,
+    theme: { accent: 0xd47aff, secondary: 0xff8fcf, silhouette: 0x3b1747, architecture: "fracture" } },
+  { id: 4, key: "final-cycle", title: "Последний цикл", firstLevel: 16, lastLevel: 20,
+    theme: { accent: 0xffd28a, secondary: 0xffefb0, silhouette: 0x46351d, architecture: "clockwork" } }
 ];
 
 export const LEVELS = [
