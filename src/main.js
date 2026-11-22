@@ -45,11 +45,13 @@ function createGame(soundFX) {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
     scale: {
-      mode: Phaser.Scale.FIT,
+      // EXPAND keeps the complete game visible while extending the logical
+      // viewport to the actual container ratio (no FIT letterboxing).
+      mode: Phaser.Scale.EXPAND,
       autoCenter: Phaser.Scale.CENTER_BOTH,
       width: GAME_WIDTH,
       height: GAME_HEIGHT,
-      expandParent: false
+      expandParent: true
     },
     render: {
       antialias: true,
