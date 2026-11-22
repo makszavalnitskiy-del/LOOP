@@ -70,6 +70,32 @@ function createGame(soundFX) {
     scene: [BootScene, MenuScene, AwakeningScene, GameScene]
   });
 
+  // Keep the canvas synchronized with mobile visual-viewport changes (browser
+  // chrome, safe-area changes and device rotation), not only window resize.
+  let resizeQueued = false;
+  const refreshGameViewport = () => {
+    if (resizeQueued || !game.scale) return;
+    resizeQueued = true;
+    window.requestAnimationFrame(() => {
+      resizeQueued = false;
+      game.scale.refresh();
+    });
+  };
+  if (typeof ResizeObserver !== "undefined") {
+    const viewportObserver = new ResizeObserver(refreshGameViewport);
+    viewportObserver.observe(document.getElementById("game-shell"));
+    game.events.once("destroy", () => viewportObserver.disconnect());
+  }
+  window.visualViewport?.addEventListener("resize", refreshGameViewport, { passive: true });
+  window.addEventListener("orientationchange", refreshGameViewport, { passive: true });
+  window.addEventListener("resize", refreshGameViewport, { passive: true });
+  game.events.once("destroy", () => {
+    window.visualViewport?.removeEventListener("resize", refreshGameViewport);
+    window.removeEventListener("orientationchange", refreshGameViewport);
+    window.removeEventListener("resize", refreshGameViewport);
+  });
+  refreshGameViewport();
+
   // Phaser's registry is shared by every scene and survives scene transitions.
   game.registry.set("YandexSDK", YandexSDK);
   game.registry.set("SoundFX", soundFX);
