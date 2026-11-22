@@ -372,6 +372,9 @@ export class GameScene extends Phaser.Scene {
         color: "#ffd99a", stroke: "#17102f", strokeThickness: 3
       }).setOrigin(0.5));
     }
+    if (this.level.id === 3) {
+      this.lampFocusButton = this.createHudButton(width / 2, 30, 76, 30, "СВЕТ", () => this.toggleLampFocus());
+    }
     this.createHudButton(width - 278, 30, 76, 30, "РЕСТАРТ", () => this.restartLevel());
     this.createHudButton(width - 190, 30, 68, 30, "МЕНЮ", () => this.returnToMenu());
     this.createHudButton(width - 112, 30, 76, 30, "ПАУЗА", () => this.togglePause());
@@ -398,6 +401,21 @@ export class GameScene extends Phaser.Scene {
     zone.on("pointerout", () => text.setColor("#e6faff"));
     this.hud.add([visual, text, zone]);
     return { visual, label: text, zone };
+  }
+
+  toggleLampFocus() {
+    if (!this.lamp || !this.player || !this.lampFocusButton) return;
+    this.lampFocusActive = !this.lampFocusActive;
+    const camera = this.cameras.main;
+    camera.stopFollow();
+    if (this.lampFocusActive) {
+      // Recenter on the lamp so it remains reachable after the player has moved far right.
+      camera.pan(this.lamp.x, this.lamp.y, 420, "Sine.easeInOut");
+      this.lampFocusButton.label.setText("АРЗОН");
+    } else {
+      camera.startFollow(this.player, true, 0.08, 0.08);
+      this.lampFocusButton.label.setText("СВЕТ");
+    }
   }
 
   getMuteLabel() {
