@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { LEVELS, getLevelById, getLevelCount, getNextLevelId } from "../src/data/levels.js";
+import { CHAPTERS, LEVELS, getLevelById, getLevelCount, getNextLevelId } from "../src/data/levels.js";
 import { ShadowProjection } from "../src/mechanics/shadows/ShadowProjection.js";
 
 const sampleGap = { groundY: 496, gapStart: 400, gapEnd: 620 };
