@@ -196,6 +196,29 @@ test("level 3 second barrier patrols vertically and never clips into the floor",
     "the barrier must stay above the floor throughout its vertical patrol");
 });
 
+test("every moving crystal remains solvable at both patrol extremes", () => {
+  for (const level of LEVELS) {
+    for (const crystal of crystalsFor(level)) {
+      if (!crystal.patrol) continue;
+      const gap = level.gaps.find(item => item.bridgeId === crystal.bridgeId);
+      assert.ok(gap, `level ${level.id}: missing gap for moving crystal ${crystal.id}`);
+      for (const position of [crystal.patrol.min, crystal.patrol.max]) {
+        const obstacle = { ...crystal, [crystal.patrol.axis]: position };
+        const solution = findLampPosition(level, (lightX, lightY) => {
+          const projection = ShadowProjection.calculate({
+            lightX, lightY, obstacle,
+            groundY: level.world.groundY,
+            gapStart: gap.x, gapEnd: gap.x + gap.width
+          });
+          return projection.fullCoverage && projection.coverage >= 1 - 1e-9;
+        }, 4);
+        assert.ok(solution,
+          `level ${level.id}: ${crystal.id} cannot form its bridge at patrol ${crystal.patrol.axis}=${position}`);
+      }
+    }
+  }
+});
+
 test("moving obstacle patrols remain inside their declared ranges", () => {
   for (const level of LEVELS) {
     for (const obstacle of level.obstacles) {
