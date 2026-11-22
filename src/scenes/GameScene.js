@@ -1,4 +1,4 @@
-import { LEVELS } from "../data/levels.js";
+import { CHAPTERS, LEVELS } from "../data/levels.js";
 import { ShadowProjection } from "../mechanics/shadows/ShadowProjection.js";
 
 const PROGRESS_KEY = "loop_progress_v1";
@@ -172,7 +172,8 @@ export class GameScene extends Phaser.Scene {
       mist.fillEllipse(i * width / 7, 420 + Math.sin(i) * 22, 300, 74);
     }
     const chapterIndex = Phaser.Math.Clamp(Math.ceil(this.level.id / 5) - 1, 0, 3);
-    const chapterAccent = [0x62dff5, 0x9b83ff, 0xd47aff, 0xffd28a][chapterIndex];
+    const chapterTheme = CHAPTERS[chapterIndex].theme;
+    const chapterAccent = chapterTheme.accent;
     const ancientSigil = this.add.graphics().setDepth(-19).setScrollFactor(0.16, 0.28);
     ancientSigil.lineStyle(2, chapterAccent, 0.13);
     ancientSigil.strokeCircle(width * 0.72, 292, 126);
@@ -197,6 +198,56 @@ export class GameScene extends Phaser.Scene {
       monoliths.lineBetween(x + 1, 432 - h + 12, x + 1, 432 - 12);
       monoliths.fillStyle(chapterAccent, 0.16);
       monoliths.fillCircle(x + 1, 432 - h + 18, 2.2);
+    }
+    // Each chapter gets a distinct architectural silhouette, not just a color swap.
+    const landmarks = this.add.graphics().setDepth(-13).setScrollFactor(0.48, 0.6);
+    for (let index = 0; index < 5; index++) {
+      const x = 150 + index * (width / 5);
+      const baseY = 432;
+      const height = 112 + ((index * 37 + this.level.id * 11) % 74);
+      if (chapterTheme.architecture === "sanctuary") {
+        landmarks.fillStyle(chapterTheme.silhouette, 0.34);
+        landmarks.fillRect(x - 30, baseY - height, 18, height);
+        landmarks.fillRect(x + 12, baseY - height, 18, height);
+        landmarks.fillRect(x - 42, baseY - height - 12, 84, 16);
+        landmarks.lineStyle(2, chapterAccent, 0.22);
+        landmarks.strokeCircle(x, baseY - height - 12, 28);
+        landmarks.lineBetween(x - 8, baseY - height + 8, x - 8, baseY - 18);
+        landmarks.lineBetween(x + 8, baseY - height + 8, x + 8, baseY - 18);
+      } else if (chapterTheme.architecture === "resonance") {
+        landmarks.fillStyle(chapterTheme.silhouette, 0.3);
+        landmarks.fillTriangle(x - 34, baseY, x, baseY - height, x + 34, baseY);
+        landmarks.lineStyle(3, chapterAccent, 0.22);
+        landmarks.strokeCircle(x, baseY - height * 0.58, 26 + (index % 2) * 8);
+        landmarks.lineStyle(1, chapterTheme.secondary, 0.28);
+        landmarks.lineBetween(x - 46, baseY - height * 0.58, x + 46, baseY - height * 0.58);
+        landmarks.fillCircle(x, baseY - height * 0.58, 4);
+      } else if (chapterTheme.architecture === "fracture") {
+        landmarks.fillStyle(chapterTheme.silhouette, 0.42);
+        landmarks.fillPoints([
+          new Phaser.Geom.Point(x - 42, baseY), new Phaser.Geom.Point(x - 18, baseY - height * 0.72),
+          new Phaser.Geom.Point(x - 4, baseY - height), new Phaser.Geom.Point(x + 10, baseY - height * 0.48),
+          new Phaser.Geom.Point(x + 38, baseY - height * 0.86), new Phaser.Geom.Point(x + 48, baseY)
+        ], true);
+        landmarks.lineStyle(2, chapterAccent, 0.28);
+        landmarks.lineBetween(x - 4, baseY - height, x + 10, baseY - height * 0.48);
+        landmarks.lineBetween(x + 10, baseY - height * 0.48, x - 22, baseY - height * 0.2);
+      } else {
+        landmarks.fillStyle(chapterTheme.silhouette, 0.38);
+        landmarks.fillRect(x - 5, baseY - height, 10, height);
+        landmarks.fillRect(x - 36, baseY - 20, 72, 20);
+        landmarks.lineStyle(3, chapterAccent, 0.24);
+        landmarks.strokeCircle(x, baseY - height * 0.62, 34);
+        landmarks.lineStyle(1.5, chapterTheme.secondary, 0.3);
+        for (let spoke = 0; spoke < 8; spoke++) {
+          const angle = spoke * Math.PI / 4;
+          landmarks.lineBetween(
+            x + Math.cos(angle) * 22, baseY - height * 0.62 + Math.sin(angle) * 22,
+            x + Math.cos(angle) * 42, baseY - height * 0.62 + Math.sin(angle) * 42
+          );
+        }
+        landmarks.fillCircle(x, baseY - height * 0.62, 5);
+      }
     }
     const stars = this.add.graphics().setDepth(-15);
     for (let i = 0; i < Math.ceil(width / 12); i++) {
@@ -243,7 +294,7 @@ export class GameScene extends Phaser.Scene {
   createWorldDecoration() {
     const graphics = this.add.graphics().setDepth(3.5);
     const chapterIndex = Phaser.Math.Clamp(Math.ceil(this.level.id / 5) - 1, 0, 3);
-    const accent = [0x62dff5, 0x9b83ff, 0xd47aff, 0xffd28a][chapterIndex];
+    const accent = CHAPTERS[chapterIndex].theme.accent;
     const groundY = this.worldGroundY;
     for (const platform of this.level.platforms ?? []) {
       const left = platform.x;
