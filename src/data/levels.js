@@ -193,14 +193,17 @@ function createAdditionalLevel(config) {
   });
 
   const obstacles = gaps.map((gap, index) => {
-    const width = config.crystalWidths?.[index] ?? 132;
-    const height = config.crystalHeights?.[index] ?? 74;
+    const difficultyStep = Math.max(0, config.id - 7);
+    // Later chapters use slimmer crystals: the shadow still has a valid solution,
+    // but the player must position the lamp more precisely.
+    const width = config.crystalWidths?.[index] ?? Math.max(96, 132 - difficultyStep * 3);
+    const height = config.crystalHeights?.[index] ?? Math.max(52, 74 - difficultyStep * 1.5);
     const y = config.crystalY?.[index] ?? 330;
     const patrol = config.movingGapIndexes?.includes(index) ? {
       axis: index % 2 === 0 ? "y" : "x",
-      min: index % 2 === 0 ? y - 32 : gap.x - 100,
-      max: index % 2 === 0 ? y + 32 : gap.x - 35,
-      speed: 54 + (config.id % 4) * 9,
+      min: index % 2 === 0 ? y - (32 + difficultyStep * 1.2) : gap.x - (100 + difficultyStep * 2),
+      max: index % 2 === 0 ? y + (32 + difficultyStep * 1.2) : gap.x - 35,
+      speed: 48 + difficultyStep * 4,
       start: index % 2 === 0 ? y : gap.x - 100,
       direction: index % 2 === 0 ? 1 : -1
     } : null;
@@ -249,10 +252,10 @@ LEVELS.push(
   createAdditionalLevel({ id: 12, key: "drift", title: "Смещение", subtitle: "Два независимых участка", description: "Настрой два моста в правильной последовательности.", lore: "Даже неподвижные вещи здесь медленно меняют место.", objective: "СОЕДИНИ ДВА РАЗРЫВА", gaps: [{ x: 370, width: 235 }, { x: 920, width: 275 }], parTimeSec: 88 }),
   createAdditionalLevel({ id: 13, key: "vanishing-path", title: "Исчезающий путь", subtitle: "Временный мост", description: "Создай мост от патрулирующего кристалла и не задерживайся.", lore: "Путь существует лишь пока его помнят.", objective: "ПОЙМАЙ ТЕНЬ И ПЕРЕЙДИ", gaps: [{ x: 400, width: 250 }], movingGapIndexes: [0], parTimeSec: 50 }),
   createAdditionalLevel({ id: 14, key: "light-storm", title: "Световая буря", subtitle: "Аномалия", description: "Сочетай статичный и движущийся кристаллы.", lore: "Аномалия разорвала привычный порядок теней.", objective: "СНАЧАЛА ЗАКРЕПИ МОСТ, ЗАТЕМ ПОЙМАЙ ВТОРОЙ", gaps: [{ x: 360, width: 220 }, { x: 900, width: 285 }], movingGapIndexes: [1], parTimeSec: 92 }),
-  createAdditionalLevel({ id: 15, key: "reverse-phase", title: "Обратная фаза", subtitle: "Точный расчёт", description: "Перестрой свет между двумя независимыми мостами.", lore: "Маятник остановился. Наступила тишина перед последним циклом.", objective: "СОБЕРИ ЦЕПОЧКУ ТЕНЕЙ", gaps: [{ x: 385, width: 255 }, { x: 950, width: 300 }], parTimeSec: 95 }),
+  createAdditionalLevel({ id: 15, key: "reverse-phase", title: "Обратная фаза", subtitle: "Точный расчёт", description: "Перестрой свет между двумя независимыми мостами.", lore: "Маятник остановился. Наступила тишина перед последним циклом.", objective: "СОБЕРИ ЦЕПОЧКУ ТЕНЕЙ", gaps: [{ x: 385, width: 255 }, { x: 950, width: 300 }], movingGapIndexes: [1], parTimeSec: 95 }),
   createAdditionalLevel({ id: 16, key: "last-frontier", title: "Последний рубеж", subtitle: "Сложный маршрут", description: "Преодолей два разрыва, один из кристаллов движется.", lore: "За горизонтом больше нет света, кроме того, что ты несёшь.", objective: "ПРЕОДОЛЕЙ ОБА РАЗРЫВА", gaps: [{ x: 400, width: 260 }, { x: 970, width: 310 }], movingGapIndexes: [1], parTimeSec: 100 }),
-  createAdditionalLevel({ id: 17, key: "two-sides", title: "Две стороны", subtitle: "Разветвлённые тени", description: "Закрепи первый мост и перенеси источник ко второму.", lore: "Каждый выбор оставляет собственную тень.", objective: "СОЕДИНИ ДВЕ СТОРОНЫ", gaps: [{ x: 350, width: 235 }, { x: 910, width: 280 }], parTimeSec: 96 }),
-  createAdditionalLevel({ id: 18, key: "sensor-echo", title: "Эхо сенсора", subtitle: "Двойной резонанс", description: "Настрой два моста и сохрани точность положения лампы.", lore: "Старые механизмы проснулись от знакомого прикосновения.", objective: "СОЗДАЙ ДВА МОСТА", gaps: [{ x: 420, width: 270 }, { x: 1010, width: 320 }], parTimeSec: 108 }),
+  createAdditionalLevel({ id: 17, key: "two-sides", title: "Две стороны", subtitle: "Разветвлённые тени", description: "Закрепи первый мост и перенеси источник ко второму.", lore: "Каждый выбор оставляет собственную тень.", objective: "СОЕДИНИ ДВЕ СТОРОНЫ", gaps: [{ x: 350, width: 235 }, { x: 910, width: 280 }], movingGapIndexes: [0], parTimeSec: 96 }),
+  createAdditionalLevel({ id: 18, key: "sensor-echo", title: "Эхо сенсора", subtitle: "Двойной резонанс", description: "Настрой два моста и сохрани точность положения лампы.", lore: "Старые механизмы проснулись от знакомого прикосновения.", objective: "СОЗДАЙ ДВА МОСТА", gaps: [{ x: 420, width: 270 }, { x: 1010, width: 320 }], movingGapIndexes: [1], parTimeSec: 108 }),
   createAdditionalLevel({ id: 19, key: "cycle-edge", title: "Грань цикла", subtitle: "Последняя проверка", description: "Синхронизируй движущийся кристалл с последним переходом.", lore: "Граница между светом и тьмой стала почти невидимой.", objective: "ПОЙМАЙ СОВПАДЕНИЕ ФАЗ", gaps: [{ x: 390, width: 250 }, { x: 960, width: 315 }], movingGapIndexes: [0, 1], parTimeSec: 112 }),
   createAdditionalLevel({ id: 20, key: "final-cycle", title: "Последний цикл", subtitle: "Финал", description: "Пройди последнее испытание и замкни цикл.", lore: "Арзон понял: свет не уничтожает тьму. Он показывает дорогу сквозь неё.", objective: "ЗАМКНИ ПОСЛЕДНИЙ ЦИКЛ", gaps: [{ x: 400, width: 275 }, { x: 1000, width: 330 }], movingGapIndexes: [1], parTimeSec: 120 })
 );
