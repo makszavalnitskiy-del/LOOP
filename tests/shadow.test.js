@@ -95,6 +95,21 @@ test("shadow polygon intersects a sensor rectangle even when its center is outsi
   assert.equal(ShadowProjection.intersectsRect([], { x: 0, y: 0, width: 5, height: 5 }), false);
 });
 
+test("each chapter defines a distinct architectural identity and readable palette", () => {
+  assert.equal(CHAPTERS.length, 4);
+  const styles = CHAPTERS.map(chapter => chapter.theme?.architecture);
+  const accents = CHAPTERS.map(chapter => chapter.theme?.accent);
+  assert.deepEqual(styles, ["sanctuary", "resonance", "fracture", "clockwork"]);
+  assert.equal(new Set(styles).size, 4, "chapter silhouettes must not repeat");
+  assert.equal(new Set(accents).size, 4, "chapter accent colors must be distinct");
+  for (const chapter of CHAPTERS) {
+    assert.ok(Number.isInteger(chapter.theme.accent));
+    assert.ok(Number.isInteger(chapter.theme.secondary));
+    assert.ok(Number.isInteger(chapter.theme.silhouette));
+    assert.ok(chapter.firstLevel <= chapter.lastLevel);
+  }
+});
+
 test("all twenty levels have valid platform, gap, spawn, lamp and portal geometry", () => {
   assert.equal(getLevelCount(), 20);
   assert.deepEqual(LEVELS.map(level => level.id), Array.from({ length: 20 }, (_, index) => index + 1));
