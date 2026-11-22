@@ -462,13 +462,44 @@ export class GameScene extends Phaser.Scene {
   createPortal() {
     const data = this.level.portal;
     this.portal = this.add.container(data.x + data.width / 2, data.y + data.height / 2).setDepth(11);
+    const aura = this.add.ellipse(0, 0, data.width * 1.45, data.height * 1.3, 0x765bff, 0.1)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    const outerOrbit = this.add.graphics();
+    outerOrbit.lineStyle(1.5, 0x987cff, 0.42);
+    outerOrbit.strokeEllipse(0, 0, data.width * 1.08, data.height * 1.22);
+    outerOrbit.lineStyle(1, 0x59eaff, 0.28);
+    outerOrbit.strokeEllipse(0, 0, data.width * 1.22, data.height * 0.9);
     const ring = this.add.graphics();
-    ring.lineStyle(5, 0x987cff, 0.95); ring.strokeEllipse(0, 0, data.width * 0.78, data.height * 0.98);
-    ring.lineStyle(2, 0x59eaff, 0.8); ring.strokeEllipse(0, 0, data.width * 0.48, data.height * 0.76);
-    ring.fillStyle(0x754dff, 0.17); ring.fillEllipse(0, 0, data.width * 0.6, data.height * 0.84);
-    this.portal.add(ring);
+    ring.lineStyle(5, 0x987cff, 0.95);
+    ring.strokeEllipse(0, 0, data.width * 0.78, data.height * 0.98);
+    ring.lineStyle(2, 0x59eaff, 0.8);
+    ring.strokeEllipse(0, 0, data.width * 0.48, data.height * 0.76);
+    ring.fillStyle(0x754dff, 0.17);
+    ring.fillEllipse(0, 0, data.width * 0.6, data.height * 0.84);
+    const innerOrbit = this.add.graphics();
+    innerOrbit.lineStyle(1.5, 0xc5b5ff, 0.72);
+    innerOrbit.strokeEllipse(0, 0, data.width * 0.34, data.height * 0.58);
+    innerOrbit.lineStyle(1, 0x8cf4ff, 0.6);
+    innerOrbit.lineBetween(-data.width * 0.18, 0, data.width * 0.18, 0);
+    innerOrbit.lineBetween(0, -data.height * 0.27, 0, data.height * 0.27);
+    const core = this.add.ellipse(0, 0, data.width * 0.2, data.height * 0.28, 0xc5b5ff, 0.22)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.portal.add([aura, outerOrbit, ring, innerOrbit, core]);
+    const runeCount = 6;
+    for (let index = 0; index < runeCount; index++) {
+      const angle = (Math.PI * 2 * index) / runeCount;
+      const rune = this.add.rectangle(
+        Math.cos(angle) * data.width * 0.48,
+        Math.sin(angle) * data.height * 0.48,
+        3, 7, index % 2 ? 0x8cf4ff : 0xc5a5ff, 0.85
+      ).setRotation(angle);
+      this.portal.add(rune);
+    }
+    this.tweens.add({ targets: this.portal, alpha: { from: 0.76, to: 1 }, scale: { from: 0.96, to: 1.04 }, duration: 1450, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: outerOrbit, angle: 360, duration: 11000, repeat: -1, ease: "Linear" });
+    this.tweens.add({ targets: innerOrbit, angle: -360, duration: 7600, repeat: -1, ease: "Linear" });
+    this.tweens.add({ targets: core, alpha: { from: 0.12, to: 0.48 }, scale: { from: 0.82, to: 1.16 }, duration: 920, yoyo: true, repeat: -1 });
     this.portalBounds = new Phaser.Geom.Rectangle(data.x, data.y, data.width, data.height);
-    this.tweens.add({ targets: this.portal, alpha: { from: 0.68, to: 1 }, scale: { from: 0.94, to: 1.06 }, duration: 1250, yoyo: true, repeat: -1 });
   }
 
   createHud() {
